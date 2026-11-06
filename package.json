@@ -1,0 +1,13 @@
+{
+  "name": "tandem-desktop",
+  "version": "0.1.0",
+  "description": "A Dynamic Island style pill for Windows: now playing, timer, volume and mic status",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "33.2.0"
+  }
+}

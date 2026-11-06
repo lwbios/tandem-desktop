@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'">
+  <title>Tandem</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="island" class="idle">
+
+    <!-- mic in use: amber dot, or red crossed mic when muted (sits above every view) -->
+    <button id="micIndicator" aria-label="Microfone">
+      <i class="dot"></i>
+      <svg viewBox="0 0 24 24" class="mic-ico muted-ico"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-3.1A7 7 0 0 0 19 11Z"/><path class="slash" d="m4 3 17 18"/></svg>
+    </button>
+
+    <!-- compact: in a call -->
+    <div class="layer compact" id="compactCall">
+      <span class="call-label">
+        <span class="server-avatar"></span>
+        <svg viewBox="0 0 24 24" class="mic-ico"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-3.1A7 7 0 0 0 19 11Z"/><path class="slash" d="m4 3 17 18"/></svg>
+        <span class="call-app"></span>
+      </span>
+      <span class="call-right">
+        <span class="mic-meter"><i></i><i></i><i></i><i></i><i></i></span>
+        <span class="muted-text">Mudo</span>
+      </span>
+    </div>
+
+    <!-- compact: now playing -->
+    <div class="layer compact" id="compactMedia">
+      <img class="art art-sm" alt="">
+      <div class="bars"><i></i><i></i><i></i><i></i></div>
+      <span class="timer-text"></span>
+    </div>
+
+    <!-- compact: timer only -->
+    <div class="layer compact" id="compactTimer">
+      <svg viewBox="0 0 24 24" class="timer-ico"><path d="M9 1h6v2H9zM12 4a9 9 0 1 0 0 18 9 9 0 0 0 0-18Zm1 9.4V8h-2v6.2l4.3 2.6 1-1.7Z"/></svg>
+      <span class="timer-text"></span>
+    </div>
+
+    <!-- compact: timer finished -->
+    <div class="layer compact" id="compactAlarm">
+      <span class="alarm-label">
+        <svg viewBox="0 0 24 24" class="timer-ico ring"><path d="M12 22a2.5 2.5 0 0 0 2.5-2.5h-5A2.5 2.5 0 0 0 12 22Zm7-6V11a7 7 0 0 0-5.5-6.8V3a1.5 1.5 0 0 0-3 0v1.2A7 7 0 0 0 5 11v5l-2 2v1h18v-1Z"/></svg>
+        Tempo esgotado
+      </span>
+      <span class="alarm-ok">OK</span>
+    </div>
+
+    <!-- compact: volume -->
+    <div class="layer compact" id="compactVolume">
+      <svg viewBox="0 0 24 24" class="speaker"><path d="M3 9v6h4l5 5V4L7 9z"/><path class="w1" d="M14.5 8.5a5 5 0 0 1 0 7"/><path class="w2" d="M17 6a8.5 8.5 0 0 1 0 12"/><path class="mute" d="m15 9 6 6m0-6-6 6"/></svg>
+      <div class="vol-track"><div class="vol-fill"></div></div>
+    </div>
+
+    <!-- compact: charging toast -->
+    <div class="layer compact" id="compactCharging">
+      <span class="charge-label">
+        <svg viewBox="0 0 24 24" class="bolt"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/></svg>
+        Carregando
+      </span>
+      <span class="charge-value"><span class="pct">--%</span><span class="battery"><span class="lvl"></span></span></span>
+    </div>
+
+    <!-- expanded: now playing -->
+    <div class="layer expanded-view" id="expandedMedia">
+      <div class="row">
+        <img class="art art-lg" alt="">
+        <div class="meta">
+          <div class="title">—</div>
+          <div class="artist"></div>
+        </div>
+        <div class="bars big"><i></i><i></i><i></i><i></i></div>
+        <span class="timer-text"></span>
+      </div>
+      <div class="progress">
+        <span class="time cur">0:00</span>
+        <div class="track"><div class="fill"></div></div>
+        <span class="time end">0:00</span>
+      </div>
+      <div class="controls">
+        <button data-cmd="prev" aria-label="Anterior">
+          <svg viewBox="0 0 24 24"><path d="M6 5h2v14H6zM20 5v14L9.5 12z"/></svg>
+        </button>
+        <button data-cmd="toggle" class="play" aria-label="Tocar/pausar">
+          <svg viewBox="0 0 24 24" class="ico-play"><path d="M7 4.5v15L20 12z"/></svg>
+          <svg viewBox="0 0 24 24" class="ico-pause"><path d="M6 4h4.5v16H6zM13.5 4H18v16h-4.5z"/></svg>
+        </button>
+        <button data-cmd="next" aria-label="Próxima">
+          <svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2zM4 5v14l10.5-7z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- expanded: nothing playing -->
+    <div class="layer expanded-view" id="expandedIdle">
+      <div class="idle-top">
+        <div class="clock-block">
+          <div class="clock">--:--</div>
+          <div class="date"></div>
+        </div>
+        <div class="battery-block">
+          <span class="battery big"><span class="lvl"></span></span>
+          <span class="pct">--%</span>
+        </div>
+      </div>
+      <div class="chips">
+        <span class="chips-label">Timer</span>
+        <button data-min="1">1 min</button>
+        <button data-min="5">5 min</button>
+        <button data-min="10">10 min</button>
+        <button data-min="25">25 min</button>
+      </div>
+    </div>
+
+    <!-- expanded: timer running, nothing playing -->
+    <div class="layer expanded-view" id="expandedTimer">
+      <div class="timer-block">
+        <div class="timer-label">Timer</div>
+        <div class="timer-big timer-text">0:00</div>
+      </div>
+      <div class="timer-buttons">
+        <button class="round orange" data-timer="pause" aria-label="Pausar/retomar">
+          <svg viewBox="0 0 24 24" class="ico-pause"><path d="M6 4h4.5v16H6zM13.5 4H18v16h-4.5z"/></svg>
+          <svg viewBox="0 0 24 24" class="ico-play"><path d="M7 4.5v15L20 12z"/></svg>
+        </button>
+        <button class="round gray" data-timer="cancel" aria-label="Cancelar">
+          <svg viewBox="0 0 24 24"><path d="M6.4 5 5 6.4 10.6 12 5 17.6 6.4 19l5.6-5.6 5.6 5.6 1.4-1.4-5.6-5.6L19 6.4 17.6 5 12 10.6z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- expanded: in a call, nothing playing -->
+    <div class="layer expanded-view" id="expandedCall">
+      <span class="server-avatar big"></span>
+      <div class="call-info">
+        <div class="call-app big"></div>
+        <div class="call-status">Microfone ativo</div>
+      </div>
+      <span class="mic-meter big"><i></i><i></i><i></i><i></i><i></i></span>
+      <button class="round mic-btn" aria-label="Mutar/desmutar microfone">
+        <svg viewBox="0 0 24 24" class="mic-ico"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-3.1A7 7 0 0 0 19 11Z"/><path class="slash" d="m4 3 17 18"/></svg>
+      </button>
+    </div>
+
+    <!-- expanded: volume overlay while scrolling -->
+    <div class="layer expanded-view" id="expandedVolume">
+      <svg viewBox="0 0 24 24" class="speaker big"><path d="M3 9v6h4l5 5V4L7 9z"/><path class="w1" d="M14.5 8.5a5 5 0 0 1 0 7"/><path class="w2" d="M17 6a8.5 8.5 0 0 1 0 12"/><path class="mute" d="m15 9 6 6m0-6-6 6"/></svg>
+      <div class="vol-track big"><div class="vol-fill"></div></div>
+      <span class="vol-pct">0%</span>
+    </div>
+
+  </div>
+  <script src="renderer.js"></script>
+</body>
+</html>
