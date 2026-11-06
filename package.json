@@ -1,13 +1,55 @@
 {
   "name": "tandem-desktop",
+  "productName": "Tandem",
   "version": "0.1.0",
-  "description": "A Dynamic Island style pill for Windows: now playing, timer, volume and mic status",
+  "description": "A smart pill at the top of the screen and a quick launcher for Windows",
+  "author": "João Lucas Souza Carneiro",
   "main": "main.js",
   "private": true,
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "dist": "electron-builder --win nsis"
   },
   "devDependencies": {
-    "electron": "33.2.0"
+    "electron": "33.2.0",
+    "electron-builder": "25.1.8"
+  },
+  "build": {
+    "appId": "com.lwbios.tandem",
+    "productName": "Tandem",
+    "copyright": "João Lucas Souza Carneiro",
+    "directories": { "output": "dist" },
+    "files": [
+      "main.js",
+      "settings.js",
+      "launcher-main.js",
+      "notes-main.js",
+      "preload.js",
+      "index.html",
+      "style.css",
+      "renderer.js",
+      "media.ps1",
+      "native.cs",
+      "assets/**",
+      "settings/**",
+      "launcher/**",
+      "notes/**"
+    ],
+    "asarUnpack": ["media.ps1", "native.cs"],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Tandem",
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "runAfterFinish": true
+    }
   }
 }

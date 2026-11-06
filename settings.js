@@ -21,9 +21,26 @@ const DEFAULTS = {
   mic: { discord: true },
   output: { battery: true },
   appearance: { scale: 1, topOffset: 6, reduceMotion: false },
+  hyperKey: false,
+  focus: {
+    minutes: 25,
+    mode: 'minimize', // minimize | close
+    apps: ['Discord', 'Steam', 'Spotify'],
+  },
   launcher: {
     clipboardHistory: true,
     clipboardMax: 200,
+    fileSearch: true,
+    snippets: [
+      { name: 'Data de hoje', keyword: ';data', text: '{date}' },
+      { name: 'Data e hora', keyword: ';agora', text: '{datetime}' },
+    ],
+    folders: [
+      { name: 'Documentos', path: '{documents}' },
+      { name: 'Downloads', path: '{downloads}' },
+      { name: 'Área de Trabalho', path: '{desktop}' },
+      { name: 'Imagens', path: '{pictures}' },
+    ],
     quicklinks: [
       { name: 'Google', keyword: 'g', url: 'https://www.google.com/search?q={query}' },
       { name: 'YouTube', keyword: 'yt', url: 'https://www.youtube.com/results?search_query={query}' },
@@ -39,6 +56,7 @@ const DEFAULTS = {
     openSettings: 'Control+Alt+O',
     toggleMic: '',
     playPause: '',
+    notes: 'Control+Alt+N',
   },
 };
 

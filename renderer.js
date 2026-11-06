@@ -7,6 +7,7 @@ const layers = {
   compactMedia: $('#compactMedia'),
   compactTimer: $('#compactTimer'),
   compactAlarm: $('#compactAlarm'),
+  compactNotify: $('#compactNotify'),
   compactVolume: $('#compactVolume'),
   compactCharging: $('#compactCharging'),
   compactCall: $('#compactCall'),
@@ -41,6 +42,7 @@ const state = {
   outputUntil: 0,       // "now playing on ..." toast
   obs: { recording: null, streaming: null }, // start times (ms) or null
   recFlashUntil: 0,
+  notifyUntil: 0,       // short messages ("Foco: Discord está bloqueado")
 };
 
 // ---------- view ----------
@@ -65,6 +67,7 @@ function render() {
   let mode = 'idle';
   if (state.hovering) mode = 'expanded';
   else if (state.alarm) mode = 'alarm';
+  else if (now < state.notifyUntil) mode = 'notify';
   else if (outputToast) mode = 'output';
   else if (volumeOn) mode = 'volume';
   else if (toast) mode = 'charging';
@@ -95,6 +98,7 @@ function render() {
   islandEl.classList.toggle('has-timer', timer);
   islandEl.classList.toggle('timer-running', timer && !state.timer.paused);
   islandEl.classList.toggle('timer-paused', timer && state.timer.paused);
+  islandEl.classList.toggle('focus-timer', timer && !!state.timer.focus);
   islandEl.classList.toggle('cam-on', camera);
   islandEl.classList.toggle('rec-on', rec);
   paintVolumeClasses();
@@ -108,6 +112,7 @@ function render() {
   layers.compactMedia.classList.toggle('on', mode === 'media');
   layers.compactTimer.classList.toggle('on', mode === 'timer');
   layers.compactAlarm.classList.toggle('on', mode === 'alarm');
+  layers.compactNotify.classList.toggle('on', mode === 'notify');
   layers.compactVolume.classList.toggle('on', mode === 'volume');
   layers.compactCharging.classList.toggle('on', mode === 'charging');
   layers.compactCall.classList.toggle('on', mode === 'call');
@@ -121,7 +126,7 @@ function render() {
 
   // Re-render when the next temporary state (toast, OSD) runs out.
   const deadlines = [
-    state.volumeUntil, state.chargingToastUntil, state.micFlashUntil, state.outputUntil, state.recFlashUntil,
+    state.volumeUntil, state.chargingToastUntil, state.micFlashUntil, state.outputUntil, state.recFlashUntil, state.notifyUntil,
   ].filter((t) => t > now);
   clearTimeout(renderTimer);
   if (deadlines.length) renderTimer = setTimeout(render, Math.min(...deadlines) - now + 30);
@@ -486,8 +491,9 @@ function timerRemaining() {
   return t.paused ? t.remaining : Math.max(0, t.endAt - Date.now());
 }
 
-function startTimer(minutes) {
-  state.timer = { endAt: Date.now() + minutes * 60000, remaining: 0, paused: false };
+function startTimer(minutes, focus = false) {
+  if (state.timer && state.timer.focus && !focus) api.focusEnded(); // a plain timer replaces a focus session
+  state.timer = { endAt: Date.now() + minutes * 60000, remaining: 0, paused: false, focus };
   state.alarm = false;
   paintTimer();
   bump();
@@ -508,6 +514,7 @@ function togglePauseTimer() {
 }
 
 function cancelTimer() {
+  if (state.timer && state.timer.focus) api.focusEnded();
   state.timer = null;
   render();
 }
@@ -519,8 +526,11 @@ function paintTimer() {
 
 let alarmTimeout = null;
 function finishTimer() {
+  const wasFocus = state.timer && state.timer.focus;
+  if (wasFocus) api.focusEnded();
   state.timer = null;
   state.alarm = true;
+  $('.alarm-text').textContent = wasFocus ? 'Foco concluído' : 'Tempo esgotado';
   playAlarm();
   render();
   clearTimeout(alarmTimeout);
@@ -559,8 +569,8 @@ $('[data-timer="pause"]').addEventListener('click', togglePauseTimer);
 $('[data-timer="cancel"]').addEventListener('click', cancelTimer);
 $('.alarm-ok').addEventListener('click', dismissAlarm);
 
-api.onTimer(({ action, minutes }) => {
-  if (action === 'start') startTimer(minutes);
+api.onTimer(({ action, minutes, focus }) => {
+  if (action === 'start') startTimer(minutes, !!focus);
   else if (action === 'pause') togglePauseTimer();
   else if (action === 'cancel') cancelTimer();
 });
@@ -636,3 +646,11 @@ if (navigator.getBattery) {
 
 render();
 api.getSettings().then(applySettings);
+
+// ---------- short notices from the main process ----------
+api.onNotify(({ text }) => {
+  $('.notify-text').textContent = text;
+  state.notifyUntil = performance.now() + 2600;
+  bump();
+  render();
+});

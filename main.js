@@ -1,10 +1,11 @@
-const { app, BrowserWindow, screen, ipcMain, Tray, Menu, nativeTheme, globalShortcut, shell } = require('electron');
+const { app, BrowserWindow, screen, ipcMain, Tray, Menu, nativeTheme, globalShortcut, shell, dialog } = require('electron');
 const path = require('path');
 const readline = require('readline');
 const fs = require('fs');
 const { spawn, execFile, execFileSync } = require('child_process');
 const settings = require('./settings');
 const launcher = require('./launcher-main');
+const notes = require('./notes-main');
 
 const WIDTH = 520;
 const HEIGHT = 240;
@@ -69,10 +70,11 @@ function createWindow() {
 function startMediaWatcher() {
   media = spawn('powershell.exe', [
     '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
-    '-File', path.join(__dirname, 'media.ps1'),
+    // In the installed app the script lives outside the asar archive, where PowerShell can read it.
+    '-File', path.join(__dirname, 'media.ps1').replace(`app.asar${path.sep}`, `app.asar.unpacked${path.sep}`),
   ], { windowsHide: true });
 
-  media.stdin.write(`ownpid ${process.pid}\napps\n`);
+  media.stdin.write(`ownpid ${process.pid}\napps\nhyper ${settings.get().hyperKey ? 'on' : 'off'}\n`);
   media.stdout.setEncoding('utf8');
   readline.createInterface({ input: media.stdout }).on('line', (line) => {
     line = line.replace(/^\uFEFF/, '').trim();
@@ -84,6 +86,8 @@ function startMediaWatcher() {
       if (msg.type === 'output') outputs = msg;
       if (msg.type === 'apps') return launcher.setApps(msg.apps || []);
       if (msg.type === 'clipboard') return launcher.onClipboardChanged();
+      if (msg.type === 'search') return launcher.onSearchResult(msg);
+      if (msg.type === 'foreground') return onForeground(msg.name);
       if (msg.type === 'fullscreen') {
         setFullscreen(msg.active);
         return;
@@ -100,6 +104,52 @@ function startMediaWatcher() {
     if (!quitting) setTimeout(startMediaWatcher, 2000);
   });
 }
+
+// ---------------------------------------------------------------- focus mode
+// A focus session runs the island timer and keeps distracting apps out of the way.
+let focus = null; // { until }
+let foregroundApp = '';
+
+function notifyIsland(text, kind = 'info') {
+  if (win && !win.isDestroyed()) win.webContents.send('notify', { text, kind });
+}
+
+function startTimer(minutes) {
+  if (win && minutes > 0) win.webContents.send('timer', { action: 'start', minutes });
+}
+
+function startFocus(minutes) {
+  if (!(minutes > 0)) minutes = settings.get().focus.minutes;
+  focus = { until: Date.now() + minutes * 60000 };
+  if (win) win.webContents.send('timer', { action: 'start', minutes, focus: true });
+  onForeground(foregroundApp);
+}
+
+function stopFocus(fromIsland = false) {
+  if (!focus) return;
+  focus = null;
+  if (!fromIsland && win) win.webContents.send('timer', { action: 'cancel' });
+}
+
+const isBlocked = (name) => !!name && settings.get().focus.apps
+  .some((a) => a.toLowerCase().replace(/\.exe$/, '') === name.toLowerCase());
+
+function onForeground(name) {
+  foregroundApp = name || '';
+  if (!focus) return;
+  if (Date.now() > focus.until) { focus = null; return; }
+  if (!isBlocked(foregroundApp)) return;
+  const label = foregroundApp.charAt(0).toUpperCase() + foregroundApp.slice(1);
+  if (settings.get().focus.mode === 'close') {
+    execFile('taskkill', ['/IM', `${foregroundApp}.exe`], { windowsHide: true }, () => {});
+    notifyIsland(`Foco: ${label} foi fechado`, 'focus');
+  } else {
+    if (media) media.stdin.write('minimizefg\n');
+    notifyIsland(`Foco: ${label} está bloqueado`, 'focus');
+  }
+}
+
+ipcMain.on('focus:ended', () => stopFocus(true));
 
 // Latest audio output info from the watcher (current device + list for the menu).
 let outputs = null;
@@ -236,6 +286,8 @@ function createTray() {
   tray.on('double-click', () => openSettings());
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: 'Abrir o lançador', click: () => launcher.show() },
+    { label: 'Notas', click: () => notes.open() },
+    { label: 'Iniciar foco', click: () => startFocus() },
     { label: 'Configurações…', click: () => openSettings() },
     { label: 'Mostrar/ocultar a ilha', click: () => toggleIsland() },
     { label: 'Recarregar a ilha', click: () => win && win.reload() },
@@ -276,6 +328,7 @@ ipcMain.on('media-cmd', (_e, cmd) => {
 
 function timerMenuItems(timerActive) {
   if (!settings.get().modules.timer) return [];
+  if (focus) return [{ label: 'Encerrar foco', click: () => stopFocus() }];
   const send = (action, minutes) => win && win.webContents.send('timer', { action, minutes });
   if (timerActive) {
     return [
@@ -382,6 +435,7 @@ function broadcastSettings() {
 }
 
 function onSettingsChanged(_s, key) {
+  if ((key === '*' || key === 'hyperKey') && media) media.stdin.write(`hyper ${settings.get().hyperKey ? 'on' : 'off'}\n`);
   if (key === '*' || key.startsWith('launcher')) launcher.broadcastSettings();
   if (key === '*' || key.startsWith('shortcuts')) applyShortcuts();
   if (key === '*' || key === 'hideInFullscreen') updateVisibility();
@@ -408,6 +462,13 @@ ipcMain.handle('settings:action', (_e, name) => {
     case 'openLauncher':
       launcher.show();
       return {};
+    case 'openNotes':
+      notes.open();
+      return {};
+    case 'pickFolder': {
+      const picked = dialog.showOpenDialogSync(settingsWin, { properties: ['openDirectory'] });
+      return { path: picked ? picked[0] : null };
+    }
     case 'reloadIsland':
       if (win) win.reload();
       return { message: 'Ilha recarregada' };
@@ -447,6 +508,7 @@ const SHORTCUT_ACTIONS = {
   openSettings: () => openSettings(),
   toggleMic: () => media && media.stdin.write('micmute\n'),
   playPause: () => media && media.stdin.write('toggle\n'),
+  notes: () => notes.toggle(),
 };
 
 let shortcutsPaused = false;
@@ -497,7 +559,12 @@ app.whenReady().then(() => {
     send: (cmd) => media && media.stdin.write(cmd + '\n'),
     settings,
     openSettings: (page) => openSettings(page),
+    startTimer,
+    startFocus,
+    stopFocus: () => stopFocus(),
+    openNotes: (create) => notes.open(create),
   });
+  notes.init();
   applyShortcuts();
   createTray();
   startMediaWatcher();
@@ -511,6 +578,7 @@ app.whenReady().then(() => {
 
 app.on('before-quit', () => {
   quitting = true;
+  if (media) media.stdin.write('hyper off\n');
   globalShortcut.unregisterAll();
   if (media) media.kill();
 });

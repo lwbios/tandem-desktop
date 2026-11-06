@@ -32,6 +32,18 @@ const PATHS = {
   link: 'M3.9 12a3.1 3.1 0 0 1 3.1-3.1h4V7H7a5 5 0 0 0 0 10h4v-1.9H7A3.1 3.1 0 0 1 3.9 12ZM8 13h8v-2H8v2Zm9-6h-4v1.9h4a3.1 3.1 0 0 1 0 6.2h-4V17h4a5 5 0 0 0 0-10Z',
   calc: 'M7 2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm0 2v4h10V4H7Zm0 6v2h2v-2H7Zm4 0v2h2v-2h-2Zm4 0v6h2v-6h-2Zm-8 4v2h2v-2H7Zm4 0v2h2v-2h-2Zm-4 4v2h6v-2H7Z',
   app: 'M4 4h7v7H4V4Zm9 0h7v7h-7V4ZM4 13h7v7H4v-7Zm9 0h7v7h-7v-7Z',
+  calendar: 'M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Zm0 16H5V9h14v11Z',
+  clock: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 10.6 3.2 1.9-1 1.7L11 13.5V7h2v5.6Z',
+  timer: 'M9 1h6v2H9V1Zm10 6.4 1.4-1.4L19 4.6 17.6 6A9 9 0 1 0 19 7.4ZM13 14h-2V8h2v6Z',
+  target: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16Zm0-14a6 6 0 1 0 0 12 6 6 0 0 0 0-12Zm0 10a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm0-6a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z',
+  key: 'M12.6 10a6 6 0 1 0 0 4H17v4h4v-4h2v-4H12.6ZM7 14a2 2 0 1 1 0-4 2 2 0 0 1 0 4Z',
+  text: 'M5 4v3h5.5v12h3V7H19V4H5Z',
+  note: 'M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10l6-6V5a2 2 0 0 0-2-2ZM7 8h10v2H7V8Zm0 4h7v2H7v-2Zm7 7v-5h5l-5 5Z',
+  file: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Zm-1 7V3.5L18.5 9H13Z',
+  image: 'M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2ZM8.5 13.5l2.5 3 3.5-4.5 4.5 6H5l3.5-4.5Z',
+  close: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm5 13.6L15.6 17 12 13.4 8.4 17 7 15.6l3.6-3.6L7 8.4 8.4 7l3.6 3.6L15.6 7 17 8.4 13.4 12l3.6 3.6Z',
+  snippet: 'M9.4 16.6 4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4Zm5.2 0 4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4Z',
+  hyper: 'M13 2 3 14h7l-1 8 10-12h-7l1-8Z',
 };
 const svg = (name) => `<svg viewBox="0 0 24 24"><path d="${PATHS[name]}"/></svg>`;
 
@@ -41,6 +53,12 @@ const COMMANDS = [
   { id: 'cmd:clipboard', title: 'Histórico da área de transferência', sub: 'Tandem', icon: 'clipboard', color: 'orange', words: 'clipboard copiar colar historico', action: { kind: 'view', id: 'clipboard' } },
   { id: 'cmd:emoji', title: 'Emojis e símbolos', sub: 'Tandem', icon: 'smile', color: 'amber', words: 'emoji simbolo emoticon', action: { kind: 'view', id: 'emoji' } },
   { id: 'cmd:settings', title: 'Configurações do Tandem', sub: 'Tandem', icon: 'gear', color: 'gray', words: 'preferencias settings opcoes', action: { kind: 'settings' } },
+  { id: 'cmd:screens', title: 'Prints recentes', sub: 'Tandem', icon: 'image', color: 'purple', words: 'print screenshot captura tela imagem', action: { kind: 'view', id: 'screens' } },
+  { id: 'cmd:notes', title: 'Abrir notas', sub: 'Notas', icon: 'note', color: 'amber', words: 'notas notes anotacoes bloco', action: { kind: 'notes' } },
+  { id: 'cmd:newnote', title: 'Nova nota', sub: 'Notas', icon: 'note', color: 'amber', words: 'nota nova note new criar', action: { kind: 'notes', create: true } },
+  { id: 'cmd:focus', title: 'Iniciar foco (25 min)', sub: 'Foco', icon: 'target', color: 'purple', words: 'foco focus pomodoro concentrar bloquear', action: { kind: 'focus', minutes: 25 } },
+  { id: 'cmd:focusstop', title: 'Encerrar foco', sub: 'Foco', icon: 'target', color: 'purple', words: 'foco parar encerrar stop focus', action: { kind: 'focusStop' } },
+  { id: 'cmd:quit', title: 'Fechar um aplicativo…', sub: 'Sistema', icon: 'close', color: 'red', words: 'fechar quit kill encerrar matar app', fill: 'fechar ' },
 
   { id: 'win:left', title: 'Metade esquerda', sub: 'Janela', icon: 'winLeft', color: 'blue', words: 'janela window left esquerda snap', action: { kind: 'window', id: 'left' } },
   { id: 'win:right', title: 'Metade direita', sub: 'Janela', icon: 'winRight', color: 'blue', words: 'janela window right direita snap', action: { kind: 'window', id: 'right' } },
@@ -69,12 +87,15 @@ const COMMANDS = [
 ];
 
 // What shows with an empty search box.
-const SUGGESTED = ['cmd:clipboard', 'cmd:emoji', 'win:left', 'win:right', 'win:max', 'sys:lock', 'cmd:settings'];
+const SUGGESTED = ['cmd:clipboard', 'cmd:emoji', 'cmd:notes', 'cmd:screens', 'cmd:focus', 'win:left', 'win:right', 'cmd:settings'];
 
 // ---------------------------------------------------------------- state
 let apps = [];
 let history = [];
-let config = { quicklinks: [], clipboardHistory: true };
+let config = { quicklinks: [], snippets: [], folders: [], clipboardHistory: true, fileSearch: true };
+let clipText = '';      // current clipboard text, for the "transform" commands
+let screens = [];       // recent screenshots
+let found = { query: '', files: [], procs: [] }; // async results from the main process
 const icons = {}; // app name -> data URL
 let view = 'root'; // root | clipboard | emoji
 let items = [];
@@ -144,12 +165,29 @@ function buildRoot(query) {
     return out;
   }
 
+  // "fechar discord" lists running apps to close.
+  const quit = norm(q).match(/^(?:fechar|close|quit|kill|encerrar)(?:\s+(.*))?$/);
+  if (quit) {
+    const term = quit[1] || '';
+    const procs = found.procs.filter((p) => !term || score(term, p.name, p.title) > 0);
+    out.push({ section: procs.length ? 'Fechar aplicativo' : 'Procurando apps abertos…' }, ...procs.map((p) => ({
+      id: `quit:${p.name}`, title: `Fechar ${prettyName(p.name)}`, sub: p.title, procIcon: p.icon, icon: 'close', color: 'red',
+      accessory: p.count > 1 ? `${p.count} janelas` : 'Aberto', action: { kind: 'quit', name: p.name },
+    })));
+    return out;
+  }
+
+  const P = window.Providers;
   const value = window.Calc.evaluate(q);
   if (value !== null) {
     out.push({ section: 'Calculadora' }, {
       id: 'calc', calc: true, title: window.Calc.format(value), sub: q, icon: 'calc', color: 'orange',
       accessory: 'Enter copia', action: { kind: 'copy', text: window.Calc.plain(value) },
     });
+  }
+  for (const provider of [P.units, (x) => P.currency(x, () => refresh(true)), P.dates, P.colors, P.timers]) {
+    const items = provider(q);
+    if (items) out.push(...items);
   }
 
   const ql = quicklinkMatch(q);
@@ -160,15 +198,33 @@ function buildRoot(query) {
     });
   }
 
+  const extras = [...P.generatorCommands(), ...P.transformCommands(clipText)];
   const ranked = [
     ...apps.map((a) => ({ item: appItem(a), s: score(q, a.name) * 1.05 })),
     ...COMMANDS.map((c) => ({ item: c, s: score(q, c.title, c.words) })),
+    ...extras.map((c) => ({ item: c, s: score(q, c.title, c.words) * 0.9 })),
+    ...config.snippets.map((sn) => ({
+      item: { id: `snip:${sn.keyword}`, title: sn.name, sub: sn.text.replace(/\s+/g, ' ').slice(0, 80), icon: 'snippet', color: 'pink', accessory: `Snippet · ${sn.keyword}`, action: { kind: 'snippet', text: sn.text } },
+      s: Math.max(score(q, sn.name, sn.text), norm(q) === norm(sn.keyword) ? 95 : score(q, sn.keyword)),
+    })),
+    ...config.folders.map((f) => ({
+      item: { id: `dir:${f.path}`, title: f.name, sub: f.path, icon: 'folder', color: 'amber', accessory: 'Pasta', action: { kind: 'open', path: f.path } },
+      s: score(q, f.name, f.path) * 1.02,
+    })),
     ...config.quicklinks.map((l) => ({
       item: { id: `qlk:${l.keyword}`, title: l.name, sub: `Quicklink · digite "${l.keyword} …"`, icon: 'link', color: 'blue', accessory: 'Quicklink', fill: `${l.keyword} ` },
       s: score(q, l.name, l.keyword),
     })),
   ].filter((r) => r.s > 0).sort((a, b) => b.s - a.s).slice(0, 40);
   if (ranked.length) out.push({ section: 'Resultados' }, ...ranked.map((r) => r.item));
+
+  // Files come from the Windows Search index, a moment after typing.
+  if (config.fileSearch && q.length >= 2 && found.query === q && found.files.length) {
+    out.push({ section: 'Arquivos' }, ...found.files.map((f) => ({
+      id: `file:${f.path}`, title: f.name, sub: f.path, fileIcon: f.path, icon: f.folder ? 'folder' : 'file', color: f.folder ? 'amber' : 'slate',
+      accessory: f.folder ? 'Pasta' : f.kind || 'Arquivo', action: { kind: 'open', path: f.path }, file: f,
+    })));
+  }
 
   const google = config.quicklinks.find((l) => l.keyword === 'g') || { name: 'Google', url: 'https://www.google.com/search?q={query}' };
   out.push({ section: 'Buscar na web' }, {
@@ -196,6 +252,15 @@ function buildClipboard(query) {
     action: { kind: 'pasteHistory', id: h.id },
   }))];
 }
+
+function buildScreens(query) {
+  const q = norm(query.trim());
+  return screens.filter((s) => !q || norm(s.name).includes(q))
+    .map((s) => ({ id: `shot:${s.path}`, shot: s, title: s.name, action: { kind: 'pasteImage', path: s.path } }));
+}
+
+const PRETTY = { msedge: 'Edge', chrome: 'Chrome', discord: 'Discord', spotify: 'Spotify', code: 'VS Code', explorer: 'Explorador', obs64: 'OBS', steam: 'Steam', whatsapp: 'WhatsApp' };
+const prettyName = (n) => PRETTY[n.toLowerCase()] || n.charAt(0).toUpperCase() + n.slice(1);
 
 function buildEmoji(query) {
   const q = query.trim();
@@ -225,7 +290,11 @@ function refresh(keepSelection = false) {
   const q = input.value;
   if (view === 'clipboard') items = buildClipboard(q);
   else if (view === 'emoji') items = buildEmoji(q);
-  else items = buildRoot(q);
+  else if (view === 'screens') items = buildScreens(q);
+  else {
+    items = buildRoot(q);
+    requestSearch(q);
+  }
   if (!keepSelection) sel = 0;
   sel = Math.min(sel, Math.max(0, selectable().length - 1));
   confirmId = null;
@@ -235,24 +304,36 @@ function refresh(keepSelection = false) {
 function render() {
   document.body.classList.toggle('in-view', view !== 'root');
   document.body.classList.toggle('with-preview', view === 'clipboard' && selectable().length > 0);
-  $('#viewTag').textContent = view === 'clipboard' ? 'Área de transferência' : view === 'emoji' ? 'Emojis e símbolos' : '';
+  $('#viewTag').textContent = VIEW_NAMES[view] || '';
   listEl.innerHTML = '';
 
   const sels = selectable();
   if (!sels.length && !items.length) {
-    listEl.innerHTML = `<div class="empty">${view === 'clipboard' ? 'Nada copiado ainda.' : 'Nenhum resultado.'}</div>`;
+    const empty = { clipboard: 'Nada copiado ainda.', screens: 'Nenhum print na pasta Imagens\\Capturas de tela.' };
+    listEl.innerHTML = `<div class="empty">${empty[view] || 'Nenhum resultado.'}</div>`;
     renderFooter(null);
     renderPreview(null);
     return;
   }
 
-  if (view === 'emoji') {
+  if (view === 'emoji' || view === 'screens') {
     const grid = document.createElement('div');
-    grid.className = 'emoji-grid';
+    grid.className = view === 'emoji' ? 'emoji-grid' : 'shot-grid';
     sels.forEach((it, i) => {
       const cell = document.createElement('div');
-      cell.className = 'emoji-cell' + (i === sel ? ' sel' : '');
-      cell.textContent = it.emoji;
+      cell.className = (view === 'emoji' ? 'emoji-cell' : 'shot-cell') + (i === sel ? ' sel' : '');
+      if (view === 'emoji') cell.textContent = it.emoji;
+      else {
+        const img = document.createElement('img');
+        img.src = it.shot.thumb;
+        img.draggable = true;
+        // Drag the real file into Discord, a browser, a folder...
+        img.addEventListener('dragstart', (e) => { e.preventDefault(); api.drag(it.shot.path); });
+        cell.appendChild(img);
+        const cap = document.createElement('span');
+        cap.textContent = timeAgo(it.shot.mtime);
+        cell.appendChild(cap);
+      }
       cell.title = it.title;
       cell.addEventListener('mousemove', () => { if (hoverOk() && sel !== i) { sel = i; render(); } });
       cell.addEventListener('click', () => activate(it));
@@ -266,6 +347,7 @@ function render() {
 
   let index = -1;
   const needIcons = [];
+  const needFileIcons = [];
   for (const it of items) {
     if (it.section) {
       const s = document.createElement('div');
@@ -292,7 +374,15 @@ function render() {
     } else if (it.clip) {
       if (it.clip.kind === 'image') icon.innerHTML = `<img src="${it.clip.thumb}" alt="">`;
       else { icon.classList.add('tile', 'c-gray'); icon.innerHTML = svg('clipboard'); }
+    } else if (it.swatch) {
+      icon.classList.add('swatch');
+      icon.style.background = it.swatch; // CSSOM is allowed by the CSP, style attributes are not
+    } else if (it.procIcon) {
+      icon.innerHTML = `<img src="${it.procIcon}" alt="">`;
+    } else if (it.fileIcon && fileIcons[it.fileIcon]) {
+      icon.innerHTML = `<img src="${fileIcons[it.fileIcon]}" alt="">`;
     } else {
+      if (it.fileIcon && !(it.fileIcon in fileIcons)) needFileIcons.push(it.fileIcon);
       icon.classList.add('tile', `c-${it.color || 'gray'}`);
       icon.innerHTML = svg(it.icon || 'app');
     }
@@ -318,6 +408,7 @@ function render() {
     listEl.appendChild(row);
   }
   if (needIcons.length) loadIcons(needIcons);
+  if (needFileIcons.length) loadFileIcons(needFileIcons);
   renderFooter(sels[sel]);
   renderPreview(view === 'clipboard' ? sels[sel] : null);
   scrollToSel();
@@ -342,16 +433,60 @@ async function loadIcons(names) {
   render();
 }
 
+const fileIcons = {}; // file path -> data URL
+let fileIconsPending = false;
+async function loadFileIcons(paths) {
+  if (fileIconsPending) return;
+  fileIconsPending = true;
+  paths.forEach((p) => (fileIcons[p] = fileIcons[p] || ''));
+  try {
+    Object.assign(fileIcons, await api.fileIcons(paths));
+  } finally {
+    fileIconsPending = false;
+  }
+  render();
+}
+
+// Files and running apps come from the main process; ask once typing pauses.
+let searchTimer = null;
+let searchSeq = 0;
+function requestSearch(q) {
+  clearTimeout(searchTimer);
+  const term = q.trim();
+  const quitting = /^(fechar|close|quit|kill|encerrar)\b/i.test(norm(term));
+  if (!quitting && (!config.fileSearch || term.length < 2)) return;
+  if (found.query === term && !quitting) return;
+  const seq = ++searchSeq;
+  searchTimer = setTimeout(async () => {
+    const res = await api.search(term, quitting ? 'procs' : 'files');
+    if (seq !== searchSeq) return; // a newer search is on its way
+    found = { query: term, files: res.files || [], procs: res.procs || [] };
+    if (input.value.trim() === term) {
+      const keep = sel;
+      items = buildRoot(input.value);
+      sel = Math.min(keep, Math.max(0, selectable().length - 1));
+      render();
+    }
+  }, quitting ? 0 : 180);
+}
+
+const VIEW_NAMES = { clipboard: 'Área de transferência', emoji: 'Emojis e símbolos', screens: 'Prints recentes' };
+
 function renderFooter(it) {
   const hint = $('#hint');
   let label = 'Abrir';
   if (!it) label = '';
-  else if (view === 'clipboard' || view === 'emoji' || it.action?.kind === 'paste') label = 'Colar';
+  else if (view === 'clipboard' || view === 'emoji' || view === 'screens' || ['paste', 'snippet', 'transform'].includes(it.action?.kind)) label = 'Colar';
+  else if (it.action?.kind === 'quit') label = 'Fechar app';
+  else if (it.action?.kind === 'timer' || it.action?.kind === 'focus') label = 'Iniciar';
+  else if (it.action?.kind === 'copy') label = 'Copiar';
   else if (it.calc) label = 'Copiar resultado';
   else if (it.action?.kind === 'view') label = 'Mostrar';
   else if (it.action?.kind === 'window' || it.action?.kind === 'system') label = 'Executar';
   else if (it.fill) label = 'Usar quicklink';
-  const extra = view === 'clipboard' && it ? '<span>Copiar<kbd>Ctrl</kbd><kbd>C</kbd></span><span>Apagar<kbd>Del</kbd></span>' : '';
+  let extra = view === 'clipboard' && it ? '<span>Copiar<kbd>Ctrl</kbd><kbd>C</kbd></span><span>Apagar<kbd>Del</kbd></span>' : '';
+  if (it && (view === 'screens' || it.file)) extra = '<span>Mostrar na pasta<kbd>Ctrl</kbd><kbd>↵</kbd></span>';
+  if (view === 'screens' && it) extra += '<span>Arraste para soltar em outro app</span>';
   hint.innerHTML = `${extra}${label ? `<span><b>${label}</b><kbd>↵</kbd></span>` : ''}<span>${view === 'root' ? 'Fechar' : 'Voltar'}<kbd>Esc</kbd></span>`;
   $('#footerTitle').textContent = view === 'root' ? 'Tandem' : $('#viewTag').textContent;
 }
@@ -382,7 +517,8 @@ function renderPreview(it) {
 function openView(id) {
   view = id;
   input.value = '';
-  input.placeholder = id === 'clipboard' ? 'Buscar no histórico…' : 'Buscar emoji ou símbolo…';
+  input.placeholder = { clipboard: 'Buscar no histórico…', emoji: 'Buscar emoji ou símbolo…', screens: 'Buscar prints…' }[id];
+  if (id === 'screens') api.screens().then((list) => { screens = list; if (view === 'screens') refresh(); });
   refresh();
 }
 
@@ -427,13 +563,20 @@ input.addEventListener('input', () => refresh());
 
 window.addEventListener('keydown', (e) => {
   const sels = selectable();
-  const cols = view === 'emoji' ? 8 : 1;
-  if (e.key === 'ArrowDown' || (view === 'emoji' && e.key === 'ArrowRight' && input.selectionStart === input.value.length)) {
+  const grid = view === 'emoji' || view === 'screens';
+  const cols = view === 'emoji' ? 8 : view === 'screens' ? 4 : 1;
+  if (e.key === 'Enter' && e.ctrlKey && sels[sel]) {
+    e.preventDefault();
+    const path = sels[sel].shot?.path || sels[sel].file?.path;
+    if (path) api.run({ kind: 'reveal', path });
+    return;
+  }
+  if (e.key === 'ArrowDown' || (grid && e.key === 'ArrowRight' && input.selectionStart === input.value.length)) {
     e.preventDefault();
     sel = Math.min(sels.length - 1, sel + (e.key === 'ArrowDown' ? cols : 1));
     confirmId = null;
     render();
-  } else if (e.key === 'ArrowUp' || (view === 'emoji' && e.key === 'ArrowLeft' && input.selectionStart === 0 && sel > 0)) {
+  } else if (e.key === 'ArrowUp' || (grid && e.key === 'ArrowLeft' && input.selectionStart === 0 && sel > 0)) {
     e.preventDefault();
     sel = Math.max(0, sel - (e.key === 'ArrowUp' ? cols : 1));
     confirmId = null;
@@ -465,6 +608,8 @@ api.onOpen(() => {
   view = 'root';
   input.value = '';
   input.placeholder = 'Busque apps e comandos…';
+  found = { query: '', files: [], procs: [] };
+  api.clipboardText().then((t) => { clipText = t || ''; });
   refresh();
   input.focus();
 });

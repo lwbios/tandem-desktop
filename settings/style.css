@@ -356,3 +356,19 @@ kbd {
 .ql-add input[name="keyword"] { width: 80px; }
 .ql-add input[name="name"] { width: 120px; }
 .ql-add input[name="url"] { flex: 1; }
+.ql-add textarea {
+  flex: 1;
+  min-height: 30px;
+  height: 30px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #18181b;
+  color: var(--text);
+  font: inherit;
+  outline: none;
+  resize: vertical;
+}
+.ql-add textarea:focus { border-color: var(--accent); }
+.chip.tag { background: rgba(191, 90, 242, 0.18); color: #d9a6f7; }
+.preset-add.wide { width: 90px; }

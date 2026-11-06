@@ -241,6 +241,123 @@ const SYSTEM = {
   },
 };
 
+// ---------------------------------------------------------------- snippets, transforms
+
+// {date} {time} {datetime} {clipboard} inside a snippet.
+function expandSnippet(text) {
+  const now = new Date();
+  return text
+    .replace(/\{date\}/g, now.toLocaleDateString('pt-BR'))
+    .replace(/\{time\}/g, now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }))
+    .replace(/\{datetime\}/g, now.toLocaleString('pt-BR'))
+    .replace(/\{clipboard\}/g, clipboard.readText());
+}
+
+const stripAccents = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '');
+const words = (s) => stripAccents(s).replace(/([a-z])([A-Z])/g, '$1 $2').split(/[^A-Za-z0-9]+/).filter(Boolean);
+const TRANSFORMS = {
+  upper: (s) => s.toLocaleUpperCase('pt-BR'),
+  lower: (s) => s.toLocaleLowerCase('pt-BR'),
+  title: (s) => s.toLocaleLowerCase('pt-BR').replace(/(^|\s)(\S)/g, (_m, a, b) => a + b.toLocaleUpperCase('pt-BR')),
+  camel: (s) => words(s).map((w, i) => (i ? w[0].toUpperCase() + w.slice(1).toLowerCase() : w.toLowerCase())).join(''),
+  snake: (s) => words(s).map((w) => w.toLowerCase()).join('_'),
+  kebab: (s) => words(s).map((w) => w.toLowerCase()).join('-'),
+  noAccents: stripAccents,
+  trim: (s) => s.split('\n').map((l) => l.replace(/\s+/g, ' ').trim()).join('\n').replace(/\n{3,}/g, '\n\n').trim(),
+};
+
+// ---------------------------------------------------------------- file search, apps to close
+
+// The watcher answers "search" commands; match answers to questions by id.
+const searches = new Map();
+let searchId = 0;
+
+function search(query, mode) {
+  return new Promise((resolve) => {
+    const id = ++searchId;
+    const timer = setTimeout(() => { searches.delete(id); resolve({}); }, 4000);
+    searches.set(id, (res) => { clearTimeout(timer); resolve(res); });
+    const b64 = Buffer.from(query, 'utf8').toString('base64');
+    deps.send(`search ${id} ${mode === 'procs' ? 'procs' : 'files'} ${b64}`);
+  });
+}
+
+// Called by main.js with the watcher's {type:'search'} answer.
+async function onSearchResult(msg) {
+  const done = searches.get(msg.id);
+  if (!done) return;
+  searches.delete(msg.id);
+  const procs = msg.procs || [];
+  for (const p of procs) {
+    if (p.path) {
+      try {
+        const img = await app.getFileIcon(p.path, { size: 'normal' });
+        if (!img.isEmpty()) p.icon = img.toDataURL();
+      } catch { /* no icon */ }
+    }
+  }
+  done({ files: msg.files || [], procs });
+}
+
+const fileIconCache = new Map(); // extension (or the path for exe/lnk/folders) -> data URL
+async function fileIcon(file) {
+  const ext = path.extname(file).toLowerCase();
+  const key = !ext || ['.exe', '.lnk', '.ico', '.url'].includes(ext) ? file : ext;
+  if (fileIconCache.has(key)) return fileIconCache.get(key);
+  let url = '';
+  try {
+    const img = await app.getFileIcon(file, { size: 'normal' });
+    if (!img.isEmpty()) url = img.toDataURL();
+  } catch { /* missing file */ }
+  fileIconCache.set(key, url);
+  return url;
+}
+
+// ---------------------------------------------------------------- screenshots
+
+function screenshotFolders() {
+  const pics = app.getPath('pictures');
+  const home = app.getPath('home');
+  return [
+    path.join(pics, 'Screenshots'),
+    path.join(pics, 'Capturas de Tela'),
+    path.join(home, 'OneDrive', 'Pictures', 'Screenshots'),
+    path.join(home, 'OneDrive', 'Imagens', 'Capturas de Tela'),
+    path.join(home, 'Videos', 'Captures'),
+  ];
+}
+
+const thumbCache = new Map(); // path|mtime -> data URL
+function recentScreenshots() {
+  const files = [];
+  for (const dir of screenshotFolders()) {
+    let names;
+    try { names = fs.readdirSync(dir); } catch { continue; }
+    for (const name of names) {
+      if (!/\.(png|jpe?g|webp|bmp|gif)$/i.test(name)) continue;
+      const full = path.join(dir, name);
+      try { files.push({ path: full, name, mtime: fs.statSync(full).mtimeMs }); } catch { /* gone */ }
+    }
+  }
+  files.sort((a, b) => b.mtime - a.mtime);
+  return files.slice(0, 40).map((f) => {
+    const key = `${f.path}|${f.mtime}`;
+    if (!thumbCache.has(key)) {
+      const img = nativeImage.createFromPath(f.path);
+      thumbCache.set(key, img.isEmpty() ? '' : img.resize({ width: 320, quality: 'good' }).toDataURL());
+    }
+    return { ...f, thumb: thumbCache.get(key) };
+  });
+}
+
+function pasteImage(file) {
+  const img = nativeImage.createFromPath(file);
+  if (img.isEmpty()) return;
+  clipboard.writeImage(img);
+  hide();
+  setTimeout(() => deps.send('paste'), 120);
+}
+
 function pasteText(text) {
   clipboard.writeText(text);
   hide();
@@ -284,6 +401,48 @@ function run(action) {
       }
       break;
     }
+    case 'snippet':
+      pasteText(expandSnippet(String(action.text)));
+      break;
+    case 'transform': {
+      const fn = TRANSFORMS[action.id];
+      const text = clipboard.readText();
+      if (fn && text) pasteText(fn(text));
+      else hide();
+      break;
+    }
+    case 'open':
+      hide();
+      shell.openPath(resolveFolder(String(action.path)));
+      break;
+    case 'reveal':
+      hide();
+      shell.showItemInFolder(String(action.path));
+      break;
+    case 'pasteImage':
+      pasteImage(String(action.path));
+      break;
+    case 'quit':
+      hide();
+      // Without /F Windows asks the app to close, so it can save or ask first.
+      if (/^[\w .-]+$/.test(action.name)) execFile('taskkill', ['/IM', `${action.name}.exe`], { windowsHide: true }, () => {});
+      break;
+    case 'timer':
+      hide();
+      deps.startTimer(Number(action.minutes));
+      break;
+    case 'focus':
+      hide();
+      deps.startFocus(Number(action.minutes));
+      break;
+    case 'focusStop':
+      hide();
+      deps.stopFocus();
+      break;
+    case 'notes':
+      hide();
+      deps.openNotes(!!action.create);
+      break;
     case 'deleteHistory':
       history.filter((h) => h.id === action.id).forEach(removeFile);
       history = history.filter((h) => h.id !== action.id);
@@ -313,7 +472,7 @@ function init(options) {
   ipcMain.handle('launcher:init', () => ({
     apps,
     history,
-    settings: deps.settings.get().launcher,
+    settings: launcherSettings(),
   }));
   ipcMain.handle('launcher:icons', async (_e, names) => {
     const out = {};
@@ -324,11 +483,35 @@ function init(options) {
     return out;
   });
   ipcMain.on('launcher:run', (_e, action) => run(action));
+  ipcMain.handle('launcher:search', (_e, query, mode) => search(String(query), mode));
+  ipcMain.handle('launcher:fileIcons', async (_e, paths) => {
+    const out = {};
+    for (const p of paths.slice(0, 30)) out[p] = await fileIcon(p);
+    return out;
+  });
+  ipcMain.handle('launcher:screens', () => recentScreenshots());
+  ipcMain.handle('launcher:clipboardText', () => clipboard.readText().slice(0, 100000));
+  ipcMain.on('launcher:drag', (e, file) => {
+    if (!fs.existsSync(file)) return;
+    const icon = nativeImage.createFromPath(file).resize({ width: 96 });
+    e.sender.startDrag({ file, icon: icon.isEmpty() ? nativeImage.createEmpty() : icon });
+  });
   refreshApps();
 }
 
-function broadcastSettings() {
-  if (win) win.webContents.send('launcher:settings', deps.settings.get().launcher);
+// Favourite folders may use {documents}, {downloads}, {desktop}, {pictures}, {home}.
+function resolveFolder(p) {
+  return p.replace(/\{(documents|downloads|desktop|pictures|home|music|videos)\}/g, (_m, name) => app.getPath(name));
 }
 
-module.exports = { init, toggle, show, hide, setApps, onClipboardChanged, clearHistory, broadcastSettings };
+// The page gets favourite folders with their placeholders already resolved.
+function launcherSettings() {
+  const s = deps.settings.get().launcher;
+  return { ...s, folders: s.folders.map((f) => ({ ...f, path: resolveFolder(f.path) })) };
+}
+
+function broadcastSettings() {
+  if (win) win.webContents.send('launcher:settings', launcherSettings());
+}
+
+module.exports = { init, toggle, show, hide, setApps, onClipboardChanged, onSearchResult, clearHistory, broadcastSettings };

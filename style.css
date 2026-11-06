@@ -427,3 +427,14 @@ html, body {
 .reduce-motion #island.bump { transform: translateX(-50%); }
 .reduce-motion #island.alarm { animation: none; }
 .reduce-motion .layer { filter: none; transform: none; }
+
+/* ---------- focus timer and notices ---------- */
+:root { --purple: #bf5af2; }
+.focus-timer .timer-text, .focus-timer .timer-label { color: var(--purple); }
+.focus-timer .timer-ico { fill: var(--purple); }
+.focus-timer .round.orange { background: rgba(191, 90, 242, 0.22); }
+.focus-timer .round.orange svg { fill: var(--purple); }
+#island.notify { width: 320px; }
+#compactNotify { justify-content: flex-start; gap: 8px; padding-left: 12px; }
+.notify-ico { width: 18px; height: 18px; fill: var(--purple); flex: none; }
+.notify-text { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

@@ -396,6 +396,20 @@ public static class WindowManager {
         last = h;
     }
 
+    // Process id of the window in front (0 when it is Tandem or the desktop).
+    public static uint ForegroundProcess() {
+        IntPtr h = GetForegroundWindow();
+        if (h == IntPtr.Zero) return 0;
+        uint pid; GetWindowThreadProcessId(h, out pid);
+        return pid == OwnPid ? 0 : pid;
+    }
+
+    public static void MinimizeForeground() {
+        IntPtr h = GetForegroundWindow();
+        uint pid; GetWindowThreadProcessId(h, out pid);
+        if (h != IntPtr.Zero && pid != OwnPid) ShowWindow(h, 6); // SW_MINIMIZE
+    }
+
     public static bool Focus() {
         if (last == IntPtr.Zero || !IsWindow(last)) return false;
         return SetForegroundWindow(last);
@@ -440,4 +454,89 @@ public static class WindowManager {
 public static class ClipboardWatch {
     [DllImport("user32.dll")] static extern uint GetClipboardSequenceNumber();
     public static uint Sequence() { return GetClipboardSequenceNumber(); }
+}
+
+// Caps Lock as a "Hyper" key: held, it acts as Ctrl+Alt+Shift+Win (for shortcuts that
+// clash with nothing); tapped alone, it still toggles Caps Lock.
+public static class HyperKey {
+    delegate IntPtr HookProc(int code, IntPtr wParam, IntPtr lParam);
+
+    [StructLayout(LayoutKind.Sequential)]
+    struct KbdHook { public uint vkCode, scanCode, flags, time; public IntPtr extra; }
+    [StructLayout(LayoutKind.Sequential)]
+    struct Msg { public IntPtr hwnd; public uint message; public IntPtr wParam, lParam; public uint time; public int x, y; }
+
+    [DllImport("user32.dll")] static extern IntPtr SetWindowsHookEx(int id, HookProc proc, IntPtr module, uint thread);
+    [DllImport("user32.dll")] static extern bool UnhookWindowsHookEx(IntPtr hook);
+    [DllImport("user32.dll")] static extern IntPtr CallNextHookEx(IntPtr hook, int code, IntPtr wParam, IntPtr lParam);
+    [DllImport("user32.dll")] static extern int GetMessage(out Msg msg, IntPtr hwnd, uint min, uint max);
+    [DllImport("user32.dll")] static extern bool PostThreadMessage(uint thread, uint msg, IntPtr w, IntPtr l);
+    [DllImport("kernel32.dll")] static extern uint GetCurrentThreadId();
+    [DllImport("kernel32.dll")] static extern IntPtr GetModuleHandle(string name);
+    [DllImport("user32.dll")] static extern void keybd_event(byte vk, byte scan, uint flags, IntPtr extra);
+
+    const uint Injected = 0x10;
+    static readonly byte[] Mods = { 0x11, 0x12, 0x10, 0x5B }; // Ctrl, Alt, Shift, LWin
+    static readonly HookProc proc = Hook; // kept alive: the hook calls it from native code
+    static System.Threading.Thread thread;
+    static uint threadId;
+    static IntPtr hook;
+    static bool held, used;
+    static DateTime pressedAt;
+
+    public static bool Enabled { get { return thread != null; } }
+
+    public static void Enable() {
+        if (thread != null) return;
+        thread = new System.Threading.Thread(() => {
+            threadId = GetCurrentThreadId();
+            hook = SetWindowsHookEx(13, proc, GetModuleHandle(null), 0); // WH_KEYBOARD_LL
+            Msg m;
+            while (GetMessage(out m, IntPtr.Zero, 0, 0) > 0) { }
+            UnhookWindowsHookEx(hook);
+            hook = IntPtr.Zero;
+        });
+        thread.IsBackground = true;
+        thread.Start();
+    }
+
+    public static void Disable() {
+        if (thread == null) return;
+        if (held) Release();
+        PostThreadMessage(threadId, 0x12, IntPtr.Zero, IntPtr.Zero); // WM_QUIT
+        thread = null;
+    }
+
+    static void Press() { foreach (var vk in Mods) keybd_event(vk, 0, 0, IntPtr.Zero); }
+
+    static void Release() {
+        // A throwaway key stops Windows from treating the Win release as "open Start".
+        keybd_event(0xE8, 0, 0, IntPtr.Zero);
+        keybd_event(0xE8, 0, 2, IntPtr.Zero);
+        for (int i = Mods.Length - 1; i >= 0; i--) keybd_event(Mods[i], 0, 2, IntPtr.Zero);
+        held = false;
+    }
+
+    static IntPtr Hook(int code, IntPtr wParam, IntPtr lParam) {
+        if (code >= 0) {
+            var k = (KbdHook)Marshal.PtrToStructure(lParam, typeof(KbdHook));
+            bool down = wParam == (IntPtr)0x100 || wParam == (IntPtr)0x104;
+            if ((k.flags & Injected) == 0) {
+                if (k.vkCode == 0x14) { // Caps Lock
+                    if (down && !held) { held = true; used = false; pressedAt = DateTime.Now; Press(); }
+                    else if (!down && held) {
+                        Release();
+                        // A quick tap with nothing else: behave like a normal Caps Lock.
+                        if (!used && (DateTime.Now - pressedAt).TotalMilliseconds < 300) {
+                            keybd_event(0x14, 0, 0, IntPtr.Zero);
+                            keybd_event(0x14, 0, 2, IntPtr.Zero);
+                        }
+                    }
+                    return (IntPtr)1; // swallow the real Caps Lock
+                }
+                if (held && down) used = true;
+            }
+        }
+        return CallNextHookEx(hook, code, wParam, lParam);
+    }
 }

@@ -128,6 +128,49 @@ function Read-Thumbnail($props) {
     }
 }
 
+# File search through the Windows Search index (fast, nothing to crawl ourselves).
+$searchConn = $null
+function Search-Files([string]$term) {
+    $term = ($term -replace "[%_\[\]']", ' ').Trim()
+    if ($term.Length -lt 2) { return @() }
+    try {
+        if (-not $script:searchConn -or $script:searchConn.State -ne 'Open') {
+            $script:searchConn = New-Object System.Data.OleDb.OleDbConnection "Provider=Search.CollatorDSO;Extended Properties='Application=Windows';"
+            $script:searchConn.Open()
+        }
+        $scope = 'file:' + ($env:USERPROFILE -replace '\\', '/')
+        $parts = @($term -split '\s+' | Where-Object { $_ } | ForEach-Object { "System.FileName LIKE '%$_%'" })
+        $sql = "SELECT TOP 12 System.ItemPathDisplay, System.ItemNameDisplay, System.ItemTypeText, System.ItemType " +
+               "FROM SYSTEMINDEX WHERE SCOPE='$scope' AND " + ($parts -join ' AND ') +
+               " ORDER BY System.DateModified DESC"
+        $cmdObj = $script:searchConn.CreateCommand()
+        $cmdObj.CommandText = $sql
+        $reader = $cmdObj.ExecuteReader()
+        $out = @()
+        while ($reader.Read()) {
+            $p = [string]$reader[0]
+            if (-not $p -or $p -match '\\AppData\\') { continue }
+            $out += @{ path = $p; name = [string]$reader[1]; kind = [string]$reader[2]; folder = ([string]$reader[3] -eq 'Directory') }
+        }
+        $reader.Close()
+        return $out
+    } catch {
+        [Console]::Error.WriteLine("file search: $($_.Exception.Message)")
+        return @()
+    }
+}
+
+# Apps with a window, for "fechar <app>".
+function Get-WindowApps {
+    $own = [WindowManager]::OwnPid
+    Get-Process | Where-Object { $_.MainWindowHandle -ne 0 -and $_.MainWindowTitle -and $_.Id -ne $own -and $_.ProcessName -notin @('explorer', 'ApplicationFrameHost', 'TextInputHost', 'SystemSettings', 'NVIDIA Overlay', 'ShellExperienceHost') } |
+        Group-Object ProcessName | ForEach-Object {
+            $p = $_.Group[0]
+            $path = $null; try { $path = $p.MainModule.FileName } catch {}
+            @{ name = $p.ProcessName; title = $p.MainWindowTitle; count = $_.Count; path = $path }
+        }
+}
+
 function Emit($obj) {
     [Console]::Out.WriteLine(($obj | ConvertTo-Json -Compress))
     [Console]::Out.Flush()
@@ -156,6 +199,18 @@ while ($true) {
             elseif ($cmd -eq 'paste') { [WindowManager]::Paste(); $cmd = '' }
             elseif ($cmd -eq 'focus') { $null = [WindowManager]::Focus(); $cmd = '' }
             elseif ($cmd -match '^window (\w+)$') { $null = [WindowManager]::Arrange($Matches[1]); $cmd = '' }
+            elseif ($cmd -match '^search (\d+) (files|procs) (\S*)$') {
+                $sid = [int]$Matches[1]; $mode = $Matches[2]
+                $term = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($Matches[3]))
+                if ($mode -eq 'procs') { Emit @{ type = 'search'; id = $sid; procs = @(Get-WindowApps) } }
+                else { Emit @{ type = 'search'; id = $sid; files = @(Search-Files $term) } }
+                $cmd = ''
+            }
+            elseif ($cmd -eq 'minimizefg') { [WindowManager]::MinimizeForeground(); $cmd = '' }
+            elseif ($cmd -match '^hyper (on|off)$') {
+                if ($Matches[1] -eq 'on') { [HyperKey]::Enable() } else { [HyperKey]::Disable() }
+                $cmd = ''
+            }
             elseif ($cmd -eq 'apps') {
                 # Start-menu shortcuts resolved to their targets, so the launcher can show real icons.
                 $targets = @{}
@@ -226,6 +281,16 @@ while ($true) {
 
     # Launcher: remember the window the user is in, and tell when the clipboard changes.
     try { [WindowManager]::Track() } catch {}
+    # Focus mode needs to know which app is in front.
+    try {
+        $fg = [WindowManager]::ForegroundProcess()
+        if ($fg -ne $lastForeground) {
+            $fgName = ''
+            if ($fg) { try { $fgName = [System.Diagnostics.Process]::GetProcessById([int]$fg).ProcessName } catch {} }
+            Emit @{ type = 'foreground'; name = $fgName }
+            $lastForeground = $fg
+        }
+    } catch {}
     try {
         $clipSeq = [ClipboardWatch]::Sequence()
         if ($null -ne $lastClipSeq -and $clipSeq -ne $lastClipSeq) { Emit @{ type = 'clipboard' } }

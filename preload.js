@@ -17,5 +17,7 @@ contextBridge.exposeInMainWorld('island', {
   onOutput: listen('output'),
   onObs: listen('obs'),
   onTimer: listen('timer'),
+  onNotify: listen('notify'),
+  focusEnded: () => ipcRenderer.send('focus:ended'),
   onMouseLeft: listen('mouse-left'),
 });

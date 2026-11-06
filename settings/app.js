@@ -8,6 +8,8 @@ const ICONS = {
   keyboard: 'M20 5H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2ZM11 8h2v2h-2V8Zm0 3h2v2h-2v-2ZM8 8h2v2H8V8Zm0 3h2v2H8v-2Zm-1 2H5v-2h2v2Zm0-3H5V8h2v2Zm9 6H8v-2h8v2Zm0-3h-2v-2h2v2Zm0-3h-2V8h2v2Zm3 3h-2v-2h2v2Zm0-3h-2V8h2v2Z',
   wrench: 'M22.7 19 13.6 9.9c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4Z',
   search: 'M15.5 14h-.8l-.3-.3A6.5 6.5 0 1 0 14 15.5l.3.3v.8l5 5 1.5-1.5-5-5Zm-6 0a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9Z',
+  note: 'M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10l6-6V5a2 2 0 0 0-2-2ZM7 8h10v2H7V8Zm0 4h7v2H7v-2Zm7 7v-5h5l-5 5Z',
+  target: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16Zm0-14a6 6 0 1 0 0 12 6 6 0 0 0 0-12Zm0 10a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm0-6a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z',
   info: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 15h-2v-6h2v6Zm0-8h-2V7h2v2Z',
   music: 'M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6Z',
   volume: 'M3 9v6h4l5 5V4L7 9H3Zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4ZM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6Z',
@@ -43,6 +45,12 @@ const PAGES = {
           { type: 'toggle', key: 'hideInFullscreen', title: 'Esconder em tela cheia', desc: 'A ilha some em jogos e apps em tela cheia no monitor principal.' },
         ],
       },
+      {
+        title: 'Teclado',
+        rows: [
+          { type: 'toggle', key: 'hyperKey', title: 'Hyper Key no Caps Lock', desc: 'Segurando, o Caps Lock vira Ctrl+Alt+Shift+Win, para atalhos que não batem com nada. Um toque rápido continua ligando o Caps Lock.' },
+        ],
+      },
     ],
   },
   appearance: {
@@ -74,6 +82,7 @@ const PAGES = {
           { type: 'shortcut', key: 'shortcuts.openSettings', title: 'Abrir as configurações' },
           { type: 'shortcut', key: 'shortcuts.toggleMic', title: 'Mutar/desmutar o microfone' },
           { type: 'shortcut', key: 'shortcuts.playPause', title: 'Tocar/pausar a música' },
+          { type: 'shortcut', key: 'shortcuts.notes', title: 'Abrir/fechar as notas' },
         ],
         note: 'Clique no atalho e pressione a nova combinação. Esc cancela, Backspace remove.',
       },
@@ -86,7 +95,7 @@ const PAGES = {
       {
         title: 'Geral',
         rows: [
-          { type: 'shortcut', key: 'shortcuts.openLauncher', title: 'Atalho para abrir', desc: 'O Raycast no Windows também usa Alt+Espaço.' },
+          { type: 'shortcut', key: 'shortcuts.openLauncher', title: 'Atalho para abrir', desc: 'Alt+Espaço é o padrão.' },
           { type: 'button', action: 'openLauncher', title: 'Abrir agora', label: 'Abrir' },
         ],
       },
@@ -99,10 +108,82 @@ const PAGES = {
         ],
       },
       {
+        title: 'Busca de arquivos',
+        rows: [
+          { type: 'toggle', key: 'launcher.fileSearch', title: 'Mostrar arquivos nos resultados', desc: 'Usa o índice de pesquisa do Windows na sua pasta de usuário.' },
+        ],
+      },
+      {
+        title: 'Snippets',
+        rows: [
+          {
+            type: 'list', key: 'launcher.snippets', title: 'Textos prontos', desc: 'Busque pelo nome ou pela palavra-chave e o lançador cola o texto. Use {date}, {time}, {datetime} e {clipboard}.',
+            fields: [
+              { name: 'keyword', placeholder: ';email', width: 90 },
+              { name: 'name', placeholder: 'Nome', width: 130 },
+              { name: 'text', placeholder: 'Texto que será colado', flex: true, multiline: true },
+            ],
+            show: (it) => ({ tag: it.keyword, title: it.name, desc: it.text }),
+            unique: 'keyword',
+          },
+        ],
+      },
+      {
+        title: 'Pastas favoritas',
+        rows: [
+          {
+            type: 'list', key: 'launcher.folders', title: 'Pastas no lançador', desc: 'Aparecem quando você busca pelo nome.',
+            fields: [
+              { name: 'name', placeholder: 'Nome', width: 140 },
+              { name: 'path', placeholder: 'C:\\caminho\\da\\pasta', flex: true, pick: true },
+            ],
+            show: (it) => ({ title: it.name, desc: it.path }),
+            unique: 'path',
+          },
+        ],
+      },
+      {
         title: 'Quicklinks',
         rows: [
           { type: 'quicklinks', key: 'launcher.quicklinks', title: 'Atalhos de busca', desc: 'Digite a palavra-chave e o texto, por exemplo "yt lofi". Use {query} no endereço.' },
         ],
+      },
+    ],
+  },
+  notes: {
+    nav: 'Notas', icon: 'note', color: 'amber',
+    subtitle: 'Uma janelinha de notas que fica por cima e salva sozinha',
+    sections: [
+      {
+        title: 'Notas',
+        rows: [
+          { type: 'shortcut', key: 'shortcuts.notes', title: 'Atalho para abrir/fechar' },
+          { type: 'button', action: 'openNotes', title: 'Abrir as notas', label: 'Abrir' },
+        ],
+        note: 'No lançador, "Nova nota" cria uma nota em branco. Ctrl+N cria uma nota dentro da janela.',
+      },
+    ],
+  },
+  focus: {
+    nav: 'Foco', icon: 'target', color: 'purple',
+    subtitle: 'Timer de foco que tira da frente os apps que distraem',
+    sections: [
+      {
+        title: 'Sessão',
+        rows: [
+          { type: 'slider', key: 'focus.minutes', title: 'Duração padrão', desc: 'Usada pelo menu da bandeja e por "foco" no lançador.', min: 5, max: 120, step: 5, unit: ' min' },
+          {
+            type: 'segmented', key: 'focus.mode', title: 'Quando abrir um app bloqueado',
+            options: [['minimize', 'Minimizar'], ['close', 'Fechar o app']],
+          },
+        ],
+      },
+      {
+        title: 'Apps bloqueados',
+        rows: [
+          { type: 'tags', key: 'focus.apps', title: 'Nome do processo', desc: 'Como aparece no Gerenciador de Tarefas, sem .exe (ex.: Discord, Steam, chrome).' },
+        ],
+        note: 'Para começar: Alt+Espaço e digite "foco" ou "foco 50". O timer da ilha fica roxo durante o foco.',
       },
     ],
   },
@@ -231,7 +312,7 @@ const PAGES = {
 };
 
 const NAV = [
-  ['general', 'appearance', 'launcher', 'shortcuts', 'advanced', 'about'],
+  ['general', 'appearance', 'launcher', 'notes', 'focus', 'shortcuts', 'advanced', 'about'],
   ['media', 'volume', 'timer', 'mic', 'camera', 'obs', 'output', 'battery'],
 ];
 
@@ -433,6 +514,11 @@ function renderRow(row) {
       break;
     case 'quicklinks':
       return quicklinksControl(row);
+    case 'list':
+      return listControl(row);
+    case 'tags':
+      el.appendChild(tagsControl(row));
+      break;
     case 'button': {
       const b = document.createElement('button');
       b.className = 'btn';
@@ -636,6 +722,102 @@ function quicklinksControl(row) {
   });
   wrap.appendChild(add);
   wrap.style.display = 'contents';
+  return wrap;
+}
+
+// ---------------------------------------------------------------- generic list editor
+function listControl(row) {
+  const wrap = document.createElement('div');
+  wrap.style.display = 'contents';
+  wrap.appendChild(rowShell(row));
+  const list = [...value(row.key)];
+  list.forEach((it, i) => {
+    const shown = row.show(it);
+    const r = document.createElement('div');
+    r.className = 'row ql-row';
+    r.innerHTML = (shown.tag ? `<kbd>${escapeHtml(shown.tag)}</kbd>` : '') +
+      `<div class="text"><div class="title">${escapeHtml(shown.title)}</div><div class="desc">${escapeHtml(shown.desc)}</div></div>`;
+    const del = document.createElement('button');
+    del.className = 'clear-shortcut';
+    del.title = 'Remover';
+    del.textContent = '✕';
+    del.addEventListener('click', () => update(row.key, list.filter((_, j) => j !== i)));
+    r.appendChild(del);
+    wrap.appendChild(r);
+  });
+
+  const form = document.createElement('form');
+  form.className = 'row ql-add';
+  for (const f of row.fields) {
+    const input = document.createElement(f.multiline ? 'textarea' : 'input');
+    input.name = f.name;
+    input.placeholder = f.placeholder;
+    if (f.multiline) input.rows = 1;
+    if (f.width) input.style.width = f.width + 'px';
+    if (f.flex) input.style.flex = '1';
+    form.appendChild(input);
+    if (f.pick) {
+      const pick = document.createElement('button');
+      pick.type = 'button';
+      pick.className = 'btn';
+      pick.textContent = 'Escolher…';
+      pick.addEventListener('click', async () => {
+        const res = await api.action('pickFolder');
+        if (res && res.path) {
+          input.value = res.path;
+          const nameInput = form.querySelector('[name="name"]');
+          if (nameInput && !nameInput.value) nameInput.value = res.path.split(/[\\/]/).filter(Boolean).pop() || res.path;
+        }
+      });
+      form.appendChild(pick);
+    }
+  }
+  const add = document.createElement('button');
+  add.type = 'submit';
+  add.className = 'btn';
+  add.textContent = 'Adicionar';
+  form.appendChild(add);
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const entry = {};
+    for (const f of row.fields) {
+      entry[f.name] = String(new FormData(form).get(f.name) || '').trim();
+      if (!entry[f.name]) return toast('Preencha todos os campos.', true);
+    }
+    if (row.unique && list.some((x) => x[row.unique].toLowerCase() === entry[row.unique].toLowerCase())) return toast('Esse item já existe.', true);
+    update(row.key, [...list, entry]);
+  });
+  wrap.appendChild(form);
+  return wrap;
+}
+
+// Chips of plain strings (blocked apps).
+function tagsControl(row) {
+  const wrap = document.createElement('div');
+  wrap.className = 'presets';
+  const list = [...value(row.key)];
+  list.forEach((t, i) => {
+    const chip = document.createElement('span');
+    chip.className = 'chip tag';
+    chip.textContent = t;
+    const x = document.createElement('button');
+    x.title = 'Remover';
+    x.textContent = '✕';
+    x.addEventListener('click', () => update(row.key, list.filter((_, j) => j !== i)));
+    chip.appendChild(x);
+    wrap.appendChild(chip);
+  });
+  const input = document.createElement('input');
+  input.className = 'preset-add wide';
+  input.placeholder = '+ app';
+  input.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    const v = input.value.trim().replace(/\.exe$/i, '');
+    if (!v) return;
+    if (list.some((x) => x.toLowerCase() === v.toLowerCase())) return toast('Esse app já está na lista.', true);
+    update(row.key, [...list, v]);
+  });
+  wrap.appendChild(input);
   return wrap;
 }
 

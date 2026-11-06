@@ -1,83 +1,170 @@
-# Tandem Desktop
+<p align="center">
+  <img src="assets/icon.png" width="112" alt="Tandem">
+</p>
 
-Uma pílula no topo da tela do Windows, inspirada na Dynamic Island, que se expande com animações elásticas para mostrar o que está acontecendo no PC.
+<h1 align="center">Tandem</h1>
 
-## O que ela faz
+<p align="center">
+  Uma pílula no topo da tela que mostra o que está acontecendo no seu PC,<br>
+  e um lançador que abre tudo com <b>Alt+Espaço</b>.
+</p>
 
-- **Tocando agora**: capa do álbum e equalizador animado para qualquer app que publique mídia no Windows (Spotify, YouTube no navegador...). Passe o mouse para ver título, artista, barra de progresso e os controles ⏮ ⏯ ⏭.
-- **Volume**: aviso com barra sempre que o volume do sistema muda. Com o mouse sobre a ilha, a rodinha do mouse ajusta o volume.
-- **Timer**: botões de 1/5/10/25 min na ilha aberta ou pelo clique direito. A contagem aparece ao lado da música, e ao terminar a ilha treme e toca um alarme.
-- **Microfone / chamadas**: detecta quais apps estão usando o microfone e mostra o ícone do app com um medidor de voz. Fora da visão de chamada, aparece uma bolinha amarela; com o mic mudo, um microfone vermelho riscado. Clique para mutar/desmutar.
-- **Discord**: durante uma chamada, mostra o nome do servidor e do canal (lidos do título da janela do Discord).
-- **Câmera em uso**: bolinha verde enquanto algum app transmite da câmera (mesma fonte do aviso de câmera do Windows).
-- **Gravação no OBS**: "REC" (ou "AO VIVO") com o tempo decorrido e uma bolinha vermelha piscando. Lido do log do OBS, sem precisar ativar o WebSocket nem senha.
-- **Saída de áudio e fones Bluetooth**: ao trocar a saída (ex.: conectar um fone), aparece o nome do dispositivo e, em fones Bluetooth que informam, a bateria. Clique direito na ilha para escolher a saída de áudio.
-- **Tela cheia e jogos**: a ilha some sozinha quando um jogo ou app em tela cheia está na frente no monitor principal, e volta quando você sai.
-- **Bateria**: aviso de "Carregando" ao conectar o carregador; relógio, data e bateria na ilha aberta quando nada está tocando.
+<p align="center">
+  <a href="https://github.com/lwbios/tandem-desktop/releases/latest"><b>⬇ Baixar para Windows</b></a>
+  &nbsp;·&nbsp;
+  <a href="#recursos">Recursos</a>
+  &nbsp;·&nbsp;
+  <a href="#atalhos">Atalhos</a>
+  &nbsp;·&nbsp;
+  <a href="#perguntas-frequentes">Perguntas frequentes</a>
+</p>
 
-Fora da pílula os cliques passam direto para o que está atrás, então ela não atrapalha.
+---
 
-## Lançador (Alt+Espaço)
+## Instalação
 
-Inspirado no Raycast: uma barra de busca que abre em cima de tudo.
+1. Baixe o **Tandem Setup.exe** na [página de downloads](https://github.com/lwbios/tandem-desktop/releases/latest).
+2. Abra o instalador e siga os passos. O Tandem abre sozinho no final.
+3. Se o Windows mostrar "O Windows protegeu o computador", clique em **Mais informações → Executar assim mesmo**. Isso acontece porque o instalador ainda não tem assinatura digital.
 
-- **Aplicativos**: todos os apps do menu Iniciar (inclusive os da Microsoft Store), com ícone.
-- **Calculadora**: digite uma conta (`2,5*4`, `(1+2)^3`, `sqrt(16)+pi`) e Enter copia o resultado.
-- **Quicklinks**: `yt lofi`, `g receita de bolo`, `gh electron`, `tr hello world`, `maps padaria`, `wiki brasil`. Dá para criar os seus nas configurações.
-- **Histórico da área de transferência**: textos e imagens copiados, com prévia; Enter cola no app em que você estava, Del apaga. Fica só no seu PC e ignora senhas marcadas por gerenciadores de senha.
-- **Emojis e símbolos**: busca em português ou inglês; Enter cola.
-- **Janelas**: metade esquerda/direita/cima/baixo, maximizar, quase maximizar, centralizar e restaurar a janela em que você estava.
-- **Sistema**: bloquear, suspender, reiniciar, desligar, sair da conta, esvaziar lixeira (pedem confirmação), alternar modo escuro, mudo, microfone, tocar/pausar, Gerenciador de Tarefas, Downloads e Configurações do Windows.
-- Qualquer outra busca vira **Pesquisar na web**.
+Pronto: a pílula aparece no topo da tela e o ícone do Tandem fica na bandeja, perto do relógio. Clique duas vezes nele para abrir as configurações.
 
-## Requisitos
+**Requisitos:** Windows 10 ou 11.
 
-- Windows 10 ou 11
-- [Node.js](https://nodejs.org/) 18+
-- Windows PowerShell 5.1 (já vem com o Windows)
+---
 
-## Como rodar
+## Recursos
+
+### A pílula
+
+Fica no topo da tela, discreta, e cresce com uma animação suave quando algo acontece. Passe o mouse em cima para ver mais detalhes. Fora dela, os cliques passam direto para o que está atrás.
+
+| | |
+| --- | --- |
+| 🎵 **Tocando agora** | Capa do álbum e equalizador para Spotify, YouTube e qualquer app de mídia. Com o mouse em cima: título, artista, progresso e os botões ⏮ ⏯ ⏭. |
+| 🔊 **Volume** | Aviso com barra sempre que o volume muda. A rodinha do mouse sobre a pílula ajusta o volume. |
+| 🎧 **Fones e saída de áudio** | Ao conectar um fone, mostra o nome e a bateria (em fones Bluetooth compatíveis). Troque a saída de áudio com o botão direito. |
+| 🎙️ **Microfone e chamadas** | Bolinha amarela quando algum app usa o microfone, com o ícone do app e um medidor de voz. Microfone mudo vira um ícone vermelho; clique para mutar ou desmutar. No Discord, mostra o servidor e o canal. |
+| 📷 **Câmera** | Bolinha verde enquanto algum app usa a câmera. |
+| 🔴 **Gravação no OBS** | "REC" ou "AO VIVO" com o tempo decorrido, sem precisar configurar nada no OBS. |
+| ⏱️ **Timer** | Tempos rápidos na pílula ou no botão direito. Ao terminar, a pílula balança e toca um aviso. |
+| 🔋 **Bateria** | Aviso de "Carregando" ao ligar o carregador. |
+| 🎮 **Tela cheia** | Em jogos e vídeos em tela cheia, a pílula sai da frente sozinha. |
+
+### O lançador (Alt+Espaço)
+
+Uma barra de busca que abre em cima de qualquer janela. Comece a digitar:
+
+| Digite | O que acontece |
+| --- | --- |
+| `chrome`, `discord`, `vsc` | Abre qualquer app instalado |
+| `2,5*4+10`, `sqrt(16)` | Calculadora (Enter copia o resultado) |
+| `10 km em milhas`, `30 c em f`, `2 gb em mb` | Converte unidades |
+| `100 usd em brl` | Converte moedas com a cotação do dia |
+| `hoje`, `hora em tóquio`, `dias até natal` | Datas, fusos horários e contagens |
+| `#ff9f0a`, `rgb(255, 0, 0)` | Mostra a cor e converte entre HEX, RGB e HSL |
+| `timer 15`, `timer 1h30` | Inicia um timer na pílula |
+| `foco 50` | Modo foco: timer roxo e apps que distraem ficam fora da frente |
+| `yt lofi`, `g receita`, `maps padaria`, `tr hello` | Busca direto no YouTube, Google, Maps, Tradutor… |
+| `relatorio` | Encontra arquivos no seu PC |
+| `fechar spotify` | Fecha um app aberto |
+| `senha`, `uuid` | Gera uma senha forte ou um UUID |
+| `maiúsculas`, `camel`, `acentos` | Transforma o texto que você copiou e cola o resultado |
+| `;data` | Cola um snippet (texto pronto) |
+
+E também:
+
+- **Histórico da área de transferência**: tudo o que você copiou (textos e imagens), com prévia. Enter cola no app em que você estava.
+- **Emojis e símbolos**: busca em português ou inglês.
+- **Prints recentes**: seus últimos prints em uma grade; arraste direto para o Discord ou para uma pasta.
+- **Janelas**: metade esquerda, metade direita, maximizar, centralizar…
+- **Sistema**: bloquear, suspender, reiniciar, desligar, esvaziar a lixeira, modo escuro, mudo.
+
+### Notas rápidas
+
+Uma janelinha de notas que fica por cima das outras e salva enquanto você digita. Abra com **Ctrl+Alt+N**.
+
+### Hyper Key
+
+Opcional, em **Configurações → Geral**: segurando o **Caps Lock**, ele vira Ctrl+Alt+Shift+Win, para você criar atalhos que não batem com nenhum outro programa. Um toque rápido continua ligando o Caps Lock.
+
+---
+
+## Atalhos
+
+| Atalho | Ação |
+| --- | --- |
+| **Alt+Espaço** | Abrir o lançador |
+| **Ctrl+Alt+N** | Abrir/fechar as notas |
+| **Ctrl+Alt+I** | Mostrar/ocultar a pílula |
+| **Ctrl+Alt+O** | Abrir as configurações |
+
+Todos podem ser trocados em **Configurações → Atalhos**, onde também dá para criar atalhos para mutar o microfone e tocar/pausar a música.
+
+## Configurações
+
+Clique duas vezes no ícone da bandeja (ou use **Ctrl+Alt+O**). Lá você pode:
+
+- ligar ou desligar cada recurso da pílula;
+- mudar o tamanho e a posição da pílula;
+- criar snippets, quicklinks e pastas favoritas;
+- escolher os apps bloqueados no modo foco;
+- iniciar o Tandem junto com o Windows.
+
+## Privacidade
+
+Tudo roda no seu computador. O Tandem não tem conta, não coleta dados e não envia nada para a internet, exceto:
+
+- a cotação de moedas, quando você pede uma conversão (serviço público do Banco Central Europeu);
+- as buscas na web que você mesmo abre.
+
+O histórico da área de transferência fica só no seu PC e ignora senhas copiadas de gerenciadores de senha.
+
+## Perguntas frequentes
+
+**A pílula sumiu.** Ela se esconde em tela cheia. Se não for isso, aperte **Ctrl+Alt+I**.
+
+**O nome do servidor do Discord está errado.** Ele vem do canal aberto na janela do Discord, que nem sempre é o canal de voz.
+
+**Mutei no Discord e a pílula não mostrou.** A pílula mostra o mudo do microfone do Windows; o mudo dentro de cada app não é visível para ela.
+
+**Meu fone não mostra a bateria.** Só aparece em fones Bluetooth que informam a bateria ao Windows.
+
+**Funciona em dois monitores?** A pílula fica no monitor principal.
+
+---
+
+<details>
+<summary><b>Para desenvolvedores</b></summary>
+
+### Rodar a partir do código
+
+Precisa do [Node.js](https://nodejs.org/) 18 ou mais novo.
 
 ```bash
 npm install
 npm start
 ```
 
-O ícone do Tandem aparece na bandeja do sistema. Clique duas vezes nele (ou use **Ctrl+Alt+O**) para abrir as **Configurações**:
+### Gerar o instalador
 
-- **Geral**: iniciar com o Windows e esconder em tela cheia.
-- **Aparência**: tamanho da ilha, distância do topo e reduzir animações.
-- **Atalhos**: atalhos globais para mostrar/ocultar a ilha (padrão **Ctrl+Alt+I**), abrir as configurações, mutar o microfone e tocar/pausar a música.
-- **Avançado**: recarregar a ilha, abrir a pasta de configurações e restaurar padrões.
-- **Módulos**: liga/desliga cada recurso da ilha e suas opções (tempos do timer, som do alarme, passo da rodinha do volume, nome do servidor do Discord, bateria de fones...).
+```bash
+npm run dist
+```
 
-As configurações ficam em `%APPDATA%\tandem-desktop\settings.json`.
+O instalador sai em `dist/`. A versão instalada guarda as configurações em `%APPDATA%\Tandem`.
 
-## Como funciona
+### Como o projeto é organizado
 
 | Arquivo | Papel |
 | --- | --- |
-| `main.js` | Processo principal do Electron: janela transparente sempre no topo, clique-através, bandeja, menu de contexto, ícones dos apps, esconder em tela cheia e leitura do log do OBS. |
-| `media.ps1` | Processo PowerShell que emite uma linha JSON por evento: mídia (WinRT `GlobalSystemMediaTransportControls`), volume, saída de áudio, microfone, câmera e tela cheia. Recebe comandos (`toggle`, `next`, `prev`, `vol 0.5`, `mute`, `micmute`, `output <id>`) pela entrada padrão. |
-| `native.cs` | Helpers nativos carregados pelo PowerShell: Core Audio (volume, saídas, microfone e sessões de captura), monitor de atividade de sensores do Media Foundation (câmera) e detecção de tela cheia. |
-| `preload.js` | Ponte segura (`contextBridge`) entre o processo principal e a página. |
-| `settings.js` | Configurações persistentes com padrões e avisos de mudança. |
-| `launcher-main.js`, `launcher/` | O lançador: janela, apps, histórico da área de transferência, ações (processo principal) e a interface com busca, calculadora e emojis. |
-| `settings/` | A janela de configurações (página, estilo, lógica e preload próprio). |
-| `index.html`, `style.css`, `renderer.js` | A ilha em si: estados, animações, timer, relógio e bateria. |
-| `assets/` | Logo original e ícones gerados: `icon.ico`/`icon.png` (app) e `tray-dark.ico`/`tray-light.ico` (bandeja, trocados conforme o tema da barra de tarefas). |
-| `scripts/make-icons.ps1` | Gera todos os ícones a partir de `assets/logo.png` (1024×1024, logo branca em fundo transparente). |
+| `main.js` | Processo principal do Electron: janela da pílula, bandeja, atalhos globais, modo foco e leitura do log do OBS. |
+| `index.html`, `style.css`, `renderer.js`, `preload.js` | A pílula: estados, animações, timer, relógio e bateria. |
+| `media.ps1` | Processo PowerShell que envia uma linha JSON por evento (mídia, volume, saída de áudio, microfone, câmera, tela cheia, janela em foco) e recebe comandos pela entrada padrão. |
+| `native.cs` | Código nativo carregado pelo PowerShell: Core Audio, câmera (Media Foundation), tela cheia, janelas e Hyper Key. |
+| `settings.js`, `settings/` | Configurações salvas e a janela de configurações. |
+| `launcher-main.js`, `launcher/` | O lançador: apps, histórico da área de transferência, ações, calculadora, conversores e emojis. |
+| `notes-main.js`, `notes/` | A janela de notas. |
+| `assets/`, `scripts/make-icons.ps1` | Logo e ícones; o script gera todos os ícones a partir de `assets/logo.png`. |
 
-Para regerar os ícones depois de trocar a logo:
-
-```bash
-powershell -ExecutionPolicy Bypass -File scripts/make-icons.ps1
-```
-
-## Limitações conhecidas
-
-- O nome do servidor do Discord vem do canal que está aberto na janela, que nem sempre é o canal de voz.
-- O mudo da ilha é o mudo do microfone no Windows; o mudo interno de apps como o Discord não é detectado.
-- Pensado para o monitor principal (inclusive a detecção de tela cheia).
-- A bateria só aparece para fones Bluetooth que reportam o nível ao Windows.
-- Trocar a saída de áudio usa uma interface não documentada do Windows (`IPolicyConfig`), estável desde o Windows 7.
+</details>

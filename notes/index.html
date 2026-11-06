@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'">
+  <title>Notas do Tandem</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="bar">
+    <button id="listBtn" class="pick" title="Todas as notas">
+      <span id="current">Nota</span>
+      <svg viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></svg>
+    </button>
+    <div class="drag"></div>
+    <button id="newBtn" title="Nova nota (Ctrl+N)"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+    <button id="pinBtn" title="Manter por cima"><svg viewBox="0 0 24 24"><path d="M14 3l7 7-3 1-4 4 1 4-2 2-4-4-5 5H3v-1l5-5-4-4 2-2 4 1 4-4 1-3Z"/></svg></button>
+    <button id="delBtn" title="Apagar nota"><svg viewBox="0 0 24 24"><path d="M5 7h14M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>
+    <button id="closeBtn" class="close" title="Fechar"><svg viewBox="0 0 24 24"><path d="m7 7 10 10M17 7 7 17"/></svg></button>
+  </header>
+  <div class="list" id="list"></div>
+  <textarea id="editor" spellcheck="true" placeholder="Escreva aqui… A primeira linha vira o título."></textarea>
+  <footer class="foot"><span id="stats"></span><span id="saved">Salvo</span></footer>
+  <script src="app.js"></script>
+</body>
+</html>
