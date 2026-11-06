@@ -1,13 +1,21 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
+const listen = (channel) => (callback) => ipcRenderer.on(channel, (_e, data) => callback(data));
+
 contextBridge.exposeInMainWorld('island', {
   setInteractive: (value) => ipcRenderer.send('set-interactive', value),
   media: (cmd) => ipcRenderer.send('media-cmd', cmd),
+  setOutput: (id) => ipcRenderer.send('set-output', id),
   contextMenu: (info) => ipcRenderer.send('context-menu', info),
-  onMedia: (callback) => ipcRenderer.on('media', (_e, data) => callback(data)),
-  onAppIcon: (callback) => ipcRenderer.on('app-icon', (_e, data) => callback(data)),
-  onMic:(callback) => ipcRenderer.on('mic', (_e, data) => callback(data)),
-  onVolume:(callback) => ipcRenderer.on('volume', (_e, data) => callback(data)),
-  onTimer: (callback) => ipcRenderer.on('timer', (_e, data) => callback(data)),
-  onMouseLeft: (callback) => ipcRenderer.on('mouse-left', () => callback()),
+  getSettings: () => ipcRenderer.invoke('island:settings'),
+  onSettings: listen('settings'),
+  onMedia: listen('media'),
+  onAppIcon: listen('app-icon'),
+  onMic: listen('mic'),
+  onCamera: listen('camera'),
+  onVolume: listen('volume'),
+  onOutput: listen('output'),
+  onObs: listen('obs'),
+  onTimer: listen('timer'),
+  onMouseLeft: listen('mouse-left'),
 });

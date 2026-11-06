@@ -10,6 +10,8 @@ const layers = {
   compactVolume: $('#compactVolume'),
   compactCharging: $('#compactCharging'),
   compactCall: $('#compactCall'),
+  compactRec: $('#compactRec'),
+  compactOutput: $('#compactOutput'),
   expandedCall: $('#expandedCall'),
   expandedMedia: $('#expandedMedia'),
   expandedIdle: $('#expandedIdle'),
@@ -19,6 +21,8 @@ const layers = {
 
 const VOLUME_OSD_MS = 1600;
 const MIC_FLASH_MS = 1800;
+const OUTPUT_TOAST_MS = 3200;
+const REC_FLASH_MS = 2500;
 
 const state = {
   hovering: false,
@@ -32,6 +36,11 @@ const state = {
   alarm: false,
   mic: { active: false, muted: false, apps: [], level: 0 },
   micFlashUntil: 0,     // briefly show the call pill when mute flips
+  camera: { active: false, apps: [] },
+  output: null,         // current audio output
+  outputUntil: 0,       // "now playing on ..." toast
+  obs: { recording: null, streaming: null }, // start times (ms) or null
+  recFlashUntil: 0,
 };
 
 // ---------- view ----------
@@ -41,21 +50,29 @@ function hasMedia() {
 
 function render() {
   const now = performance.now();
-  const media = hasMedia();
-  const volumeOn = now < state.volumeUntil;
-  const toast = now < state.chargingToastUntil;
+  // Modules switched off in the settings simply never show.
+  const media = on('media') && hasMedia();
+  const volumeOn = on('volume') && now < state.volumeUntil;
+  const toast = on('battery') && now < state.chargingToastUntil;
   const timer = !!state.timer;
-  const call = state.mic.active;
+  const call = on('mic') && state.mic.active;
   const micFlash = call && now < state.micFlashUntil;
+  const outputToast = on('output') && now < state.outputUntil;
+  const rec = on('obs') && !!(state.obs.recording || state.obs.streaming);
+  const camera = on('camera') && state.camera.active;
+  const recFlash = rec && now < state.recFlashUntil;
 
   let mode = 'idle';
   if (state.hovering) mode = 'expanded';
   else if (state.alarm) mode = 'alarm';
+  else if (outputToast) mode = 'output';
   else if (volumeOn) mode = 'volume';
   else if (toast) mode = 'charging';
+  else if (recFlash) mode = 'rec';
   else if (micFlash) mode = 'call';
   else if (media) mode = 'media';
   else if (call) mode = 'call';
+  else if (rec) mode = 'rec';
   else if (timer) mode = 'timer';
 
   // Which big view sits under the cursor; the volume overlay keeps its size.
@@ -78,7 +95,14 @@ function render() {
   islandEl.classList.toggle('has-timer', timer);
   islandEl.classList.toggle('timer-running', timer && !state.timer.paused);
   islandEl.classList.toggle('timer-paused', timer && state.timer.paused);
+  islandEl.classList.toggle('cam-on', camera);
+  islandEl.classList.toggle('rec-on', rec);
   paintVolumeClasses();
+  paintOutputClasses();
+
+  // How many privacy dots sit on the right of a compact view (CSS makes room for them).
+  const dots = (rec && mode !== 'rec' ? 1 : 0) + (camera ? 1 : 0) + (call && mode !== 'call' ? 1 : 0);
+  islandEl.style.setProperty('--ind', mode === 'expanded' ? 0 : dots);
 
   const overlayVolume = mode === 'expanded' && volumeOn;
   layers.compactMedia.classList.toggle('on', mode === 'media');
@@ -87,6 +111,8 @@ function render() {
   layers.compactVolume.classList.toggle('on', mode === 'volume');
   layers.compactCharging.classList.toggle('on', mode === 'charging');
   layers.compactCall.classList.toggle('on', mode === 'call');
+  layers.compactRec.classList.toggle('on', mode === 'rec');
+  layers.compactOutput.classList.toggle('on', mode === 'output');
   layers.expandedCall.classList.toggle('on', !overlayVolume && expandedView === 'call');
   layers.expandedVolume.classList.toggle('on', overlayVolume);
   layers.expandedMedia.classList.toggle('on', !overlayVolume && expandedView === 'media');
@@ -94,16 +120,37 @@ function render() {
   layers.expandedIdle.classList.toggle('on', !overlayVolume && expandedView === 'idle');
 
   // Re-render when the next temporary state (toast, OSD) runs out.
-  const deadlines = [state.volumeUntil, state.chargingToastUntil, state.micFlashUntil].filter((t) => t > now);
+  const deadlines = [
+    state.volumeUntil, state.chargingToastUntil, state.micFlashUntil, state.outputUntil, state.recFlashUntil,
+  ].filter((t) => t > now);
   clearTimeout(renderTimer);
   if (deadlines.length) renderTimer = setTimeout(render, Math.min(...deadlines) - now + 30);
 }
 let renderTimer = null;
 
-function bump() {
+function bump(module) {
+  if (module && !on(module)) return;
   islandEl.classList.add('bump');
   setTimeout(() => islandEl.classList.remove('bump'), 180);
 }
+
+// ---------- settings (from the settings window, via the main process) ----------
+let config = null;
+const on = (module) => !config || config.modules[module] !== false;
+
+function applySettings(s) {
+  config = s;
+  const a = s.appearance;
+  islandEl.style.zoom = a.scale;
+  islandEl.style.top = `${a.topOffset}px`;
+  document.body.classList.toggle('reduce-motion', a.reduceMotion);
+  renderPresets();
+  setArt(lastArt);
+  paintMic();
+  paintOutput();
+  render();
+}
+api.onSettings(applySettings);
 
 // ---------- hover / click-through ----------
 let leaveTimer = null;
@@ -140,7 +187,10 @@ const fmt = (s) => {
   return h ? `${h}:${String(m).padStart(2, '0')}:${sec}` : `${m}:${sec}`;
 };
 
+let lastArt = '';
 function setArt(src) {
+  lastArt = src || '';
+  if (config && !config.media.showArt) src = '';
   $$('.art').forEach((img) => {
     if (src) img.src = src;
     else img.removeAttribute('src');
@@ -160,7 +210,7 @@ api.onMedia((data) => {
     $('.title').textContent = data.title || 'Desconhecido';
     $('.artist').textContent = data.artist || friendlyApp(data.app);
   }
-  if (!state.hovering && (startedPlaying || (changedTrack && data.active))) bump();
+  if (!state.hovering && (startedPlaying || (changedTrack && data.active))) bump('media');
   render();
 });
 
@@ -245,9 +295,10 @@ api.onVolume((data) => {
 
 let lastScrollAt = 0;
 islandEl.addEventListener('wheel', (e) => {
-  if (!state.volume) return;
+  if (!state.volume || (config && !config.volume.scroll)) return;
   e.preventDefault();
-  const step = e.deltaY < 0 ? 0.02 : -0.02;
+  const amount = (config ? config.volume.step : 2) / 100;
+  const step = e.deltaY < 0 ? amount : -amount;
   const level = Math.round(Math.min(1, Math.max(0, state.volume.level + step)) * 100) / 100;
   state.volume = { level, muted: level === 0 ? state.volume.muted : false };
   lastScrollAt = performance.now();
@@ -270,6 +321,7 @@ const initials = (name) =>
 
 function discordServer() {
   const m = state.mic;
+  if (config && !config.mic.discord) return null;
   return m.active && m.discord && m.apps.includes('Discord') ? m.discord : null;
 }
 
@@ -346,7 +398,7 @@ api.onMic((data) => {
   if (serverChanged) render();
   if (started || muteFlipped) {
     state.micFlashUntil = performance.now() + MIC_FLASH_MS;
-    if (!state.hovering) bump();
+    if (!state.hovering) bump('mic');
   }
   if (data.active !== prev.active || data.muted !== prev.muted) render();
 });
@@ -360,6 +412,72 @@ function toggleMicMute() {
 }
 $('#micIndicator').addEventListener('click', toggleMicMute);
 $('.mic-btn').addEventListener('click', toggleMicMute);
+
+// ---------- camera ----------
+api.onCamera((data) => {
+  const started = data.active && !state.camera.active;
+  state.camera = { active: data.active, apps: data.apps || [] };
+  const names = state.camera.apps.map(prettyApp).join(', ');
+  $('#camIndicator').title = names ? `Câmera em uso: ${names}` : 'Câmera em uso';
+  if (started && !state.hovering) bump('camera');
+  render();
+});
+
+// ---------- audio output ----------
+const isHeadphones = (o) => o.bt || /fone|head|ear|auric|buds|pods/i.test(`${o.desc} ${o.name}`);
+
+function paintOutputClasses() {
+  const o = state.output;
+  const head = !!o && isHeadphones(o);
+  islandEl.classList.toggle('out-headphones', head);
+  islandEl.classList.toggle('out-speaker', !!o && !head);
+  islandEl.classList.toggle('out-has-battery', !!o && o.battery != null && (!config || config.output.battery));
+}
+
+function paintOutput() {
+  const o = state.output;
+  if (!o) return;
+  // Bluetooth: the device's own name ("WH-1000XM4"); otherwise the full endpoint name.
+  $('.out-name').textContent = o.bt && o.device ? o.device : o.name;
+  if (o.battery != null) {
+    $('.out-pct').textContent = `${o.battery}%`;
+    const bat = $('.out-bat');
+    bat.classList.toggle('low', o.battery <= 20);
+    $('.lvl', bat).style.width = `${Math.max(o.battery, 6)}%`;
+  }
+  paintOutputClasses();
+}
+
+api.onOutput((data) => {
+  state.output = data;
+  paintOutput();
+  if (data.changed) {
+    state.outputUntil = performance.now() + OUTPUT_TOAST_MS;
+    if (!state.hovering) bump('output');
+  }
+  render();
+});
+
+// ---------- OBS ----------
+api.onObs((data) => {
+  const wasLive = !!(state.obs.recording || state.obs.streaming);
+  state.obs = data;
+  const live = !!(data.recording || data.streaming);
+  $('.rec-kind').textContent = data.streaming ? 'AO VIVO' : 'REC';
+  $('#recIndicator').title = data.streaming ? 'Transmitindo no OBS' : 'Gravando no OBS';
+  if (live && !wasLive) {
+    state.recFlashUntil = performance.now() + REC_FLASH_MS;
+    if (!state.hovering) bump('obs');
+  }
+  paintRecTime();
+  render();
+});
+
+function paintRecTime() {
+  const start = state.obs.streaming || state.obs.recording;
+  if (start) $('.rec-time').textContent = fmt((Date.now() - start) / 1000);
+}
+setInterval(paintRecTime, 1000);
 
 // ---------- timer ----------
 function timerRemaining() {
@@ -422,9 +540,21 @@ setInterval(() => {
   if (!state.timer.paused && timerRemaining() <= 0) finishTimer();
 }, 200);
 
-$$('.chips button').forEach((btn) => {
-  btn.addEventListener('click', () => startTimer(Number(btn.dataset.min)));
-});
+// Quick-start chips in the expanded idle view, from the timer presets in settings.
+const presetLabel = (m) => (m >= 60 && m % 60 === 0 ? `${m / 60} h` : `${m} min`);
+function renderPresets() {
+  const chips = $('.chips');
+  const presets = config ? config.timer.presets : [1, 5, 10, 25];
+  chips.style.display = on('timer') ? '' : 'none';
+  chips.querySelectorAll('button').forEach((b) => b.remove());
+  for (const m of presets.slice(0, 4)) {
+    const btn = document.createElement('button');
+    btn.textContent = presetLabel(m);
+    btn.addEventListener('click', () => startTimer(m));
+    chips.appendChild(btn);
+  }
+}
+renderPresets();
 $('[data-timer="pause"]').addEventListener('click', togglePauseTimer);
 $('[data-timer="cancel"]').addEventListener('click', cancelTimer);
 $('.alarm-ok').addEventListener('click', dismissAlarm);
@@ -439,6 +569,7 @@ api.onTimer(({ action, minutes }) => {
 let audioCtx = null;
 let alarmNodes = [];
 function playAlarm() {
+  if (config && !config.timer.sound) return;
   stopAlarm();
   audioCtx = audioCtx || new AudioContext();
   const t0 = audioCtx.currentTime + 0.05;
@@ -482,7 +613,7 @@ function paintBattery() {
   if (!b) return;
   const pct = Math.round(b.level * 100);
   $$('.pct').forEach((el) => (el.textContent = `${pct}%`));
-  $$('.battery').forEach((el) => {
+  $$('.battery:not(.out-bat)').forEach((el) => {
     el.classList.toggle('low', pct <= 20 && !b.charging);
     $('.lvl', el).style.width = `${Math.max(pct, 6)}%`;
   });
@@ -504,3 +635,4 @@ if (navigator.getBattery) {
 }
 
 render();
+api.getSettings().then(applySettings);

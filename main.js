@@ -1,12 +1,15 @@
-const { app, BrowserWindow, screen, ipcMain, Tray, Menu, nativeTheme } = require('electron');
+const { app, BrowserWindow, screen, ipcMain, Tray, Menu, nativeTheme, globalShortcut, shell } = require('electron');
 const path = require('path');
 const readline = require('readline');
-const { spawn, execFileSync } = require('child_process');
+const fs = require('fs');
+const { spawn, execFile, execFileSync } = require('child_process');
+const settings = require('./settings');
 
 const WIDTH = 520;
 const HEIGHT = 240;
 
 let win = null;
+let settingsWin = null;
 let tray = null;
 let media = null;
 let quitting = false;
@@ -14,6 +17,8 @@ let quitting = false;
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 }
+// Launching Tandem again while it runs opens the settings window.
+app.on('second-instance', () => openSettings());
 
 function createWindow() {
   const { bounds } = screen.getPrimaryDisplay();
@@ -51,6 +56,9 @@ function createWindow() {
     for (const [name, dataUrl] of appIcons) {
       if (dataUrl) win.webContents.send('app-icon', { name, dataUrl });
     }
+    if (outputs) win.webContents.send('output', { ...outputs, initial: true, changed: false });
+    obs.sent = ''; // resend OBS state on the next poll
+    win.webContents.send('settings', settings.get());
   });
   win.webContents.on('console-message', (_e, level, message, line, source) => {
     if (level >= 2) console.error(`[renderer] ${message} (${source}:${line})`);
@@ -70,8 +78,14 @@ function startMediaWatcher() {
     if (!line.startsWith('{') || !win || win.isDestroyed()) return;
     try {
       const msg = JSON.parse(line);
-      if (msg.type === 'mic' && msg.paths) loadAppIcons(msg.paths);
-      win.webContents.send(['volume', 'mic'].includes(msg.type) ? msg.type : 'media', msg);
+      if (msg.paths) loadAppIcons(msg.paths);
+      if (msg.type === 'output') outputs = msg;
+      if (msg.type === 'fullscreen') {
+        setFullscreen(msg.active);
+        return;
+      }
+      const channels = ['volume', 'mic', 'camera', 'output'];
+      win.webContents.send(channels.includes(msg.type) ? msg.type : 'media', msg);
     } catch {
       // ignore malformed line
     }
@@ -81,6 +95,98 @@ function startMediaWatcher() {
     media = null;
     if (!quitting) setTimeout(startMediaWatcher, 2000);
   });
+}
+
+// Latest audio output info from the watcher (current device + list for the menu).
+let outputs = null;
+
+// The island hides for a fullscreen app or game on the primary monitor (if enabled)
+// and when the user hides it with the shortcut.
+let fullscreen = false;
+let userHidden = false;
+
+function updateVisibility() {
+  if (!win) return;
+  const hide = userHidden || (fullscreen && settings.get().hideInFullscreen);
+  if (hide && win.isVisible()) {
+    setInteractive(false);
+    win.hide();
+  } else if (!hide && !win.isVisible()) {
+    win.showInactive();
+    win.setAlwaysOnTop(true, 'screen-saver');
+  }
+}
+
+function setFullscreen(active) {
+  if (active === fullscreen) return;
+  fullscreen = active;
+  if (process.env.ISLAND_DEBUG) console.log('[fullscreen]', active ? 'hide' : 'show');
+  updateVisibility();
+}
+
+// OBS writes "==== Recording Start/Stop" (and Streaming) lines to its log, so we can
+// follow it without the websocket plugin or any password.
+const OBS_LOGS = process.env.TANDEM_OBS_LOGS || path.join(process.env.APPDATA || '', 'obs-studio', 'logs');
+const obs = { file: null, pos: 0, recording: null, streaming: null, sent: '' };
+
+function parseObsTime(hms) {
+  const [h, m, s] = hms.split(':').map(Number);
+  const d = new Date();
+  d.setHours(h, m, Math.floor(s), Math.round((s % 1) * 1000));
+  if (d.getTime() > Date.now() + 60000) d.setDate(d.getDate() - 1); // started before midnight
+  return d.getTime();
+}
+
+function readObsLog() {
+  let files;
+  try {
+    files = fs.readdirSync(OBS_LOGS)
+      .filter((f) => f.endsWith('.txt'))
+      .map((f) => ({ f, t: fs.statSync(path.join(OBS_LOGS, f)).mtimeMs }))
+      .sort((a, b) => b.t - a.t);
+  } catch {
+    return; // OBS not installed
+  }
+  if (!files.length) return;
+  const file = path.join(OBS_LOGS, files[0].f);
+  if (file !== obs.file) Object.assign(obs, { file, pos: 0, recording: null, streaming: null });
+
+  const size = fs.statSync(file).size;
+  if (size <= obs.pos) return;
+  const fd = fs.openSync(file, 'r');
+  const buf = Buffer.alloc(size - obs.pos);
+  fs.readSync(fd, buf, 0, buf.length, obs.pos);
+  fs.closeSync(fd);
+  obs.pos = size;
+
+  const re = /^\uFEFF?(\d\d:\d\d:\d\d(?:\.\d+)?): ==== (Recording|Streaming) (Start|Stop)/gm;
+  for (const m of buf.toString('utf8').matchAll(re)) {
+    const key = m[2] === 'Recording' ? 'recording' : 'streaming';
+    obs[key] = m[3] === 'Start' ? parseObsTime(m[1]) : null;
+  }
+}
+
+// A crash never logs "Stop", so double-check OBS is still running while live.
+function obsRunning() {
+  return new Promise((resolve) => {
+    execFile('tasklist', ['/FI', 'IMAGENAME eq obs64.exe', '/NH'], { windowsHide: true }, (err, out) => {
+      resolve(!err && /obs64\.exe/i.test(out));
+    });
+  });
+}
+
+let obsTicks = 0;
+async function pollObs() {
+  readObsLog();
+  if ((obs.recording || obs.streaming) && obsTicks++ % 5 === 0 && !(await obsRunning())) {
+    obs.recording = obs.streaming = null;
+  }
+  const state = { recording: obs.recording, streaming: obs.streaming };
+  const key = JSON.stringify(state);
+  if (key !== obs.sent && win && !win.isDestroyed()) {
+    obs.sent = key;
+    win.webContents.send('obs', state);
+  }
 }
 
 // Icons of apps using the microphone, pulled from their .exe (cached by app name).
@@ -123,14 +229,11 @@ function createTray() {
   tray = new Tray(trayIconPath());
   nativeTheme.on('updated', () => tray && tray.setImage(trayIconPath()));
   tray.setToolTip('Tandem');
+  tray.on('double-click', () => openSettings());
   tray.setContextMenu(Menu.buildFromTemplate([
-    {
-      label: 'Iniciar com o Windows',
-      type: 'checkbox',
-      checked: app.getLoginItemSettings().openAtLogin,
-      click: (item) => app.setLoginItemSettings({ openAtLogin: item.checked }),
-    },
-    { label: 'Recarregar', click: () => win && win.reload() },
+    { label: 'Configurações…', click: () => openSettings() },
+    { label: 'Mostrar/ocultar a ilha', click: () => toggleIsland() },
+    { label: 'Recarregar a ilha', click: () => win && win.reload() },
     { type: 'separator' },
     { label: 'Sair', click: () => app.quit() },
   ]));
@@ -166,9 +269,8 @@ ipcMain.on('media-cmd', (_e, cmd) => {
   if (media && /^(toggle|next|prev|mute|micmute|vol (0|1|0?\.\d+))$/.test(cmd)) media.stdin.write(cmd + '\n');
 });
 
-const TIMER_PRESETS = [1, 5, 10, 25, 60];
-
 function timerMenuItems(timerActive) {
+  if (!settings.get().modules.timer) return [];
   const send = (action, minutes) => win && win.webContents.send('timer', { action, minutes });
   if (timerActive) {
     return [
@@ -176,30 +278,212 @@ function timerMenuItems(timerActive) {
       { label: 'Cancelar timer', click: () => send('cancel') },
     ];
   }
-  return TIMER_PRESETS.map((m) => ({
-    label: m === 60 ? 'Timer de 1 hora' : `Timer de ${m} min`,
+  return settings.get().timer.presets.map((m) => ({
+    label: m >= 60 && m % 60 === 0 ? `Timer de ${m / 60} h` : `Timer de ${m} min`,
     click: () => send('start', m),
   }));
 }
 
-ipcMain.on('context-menu', (_e, { timerActive, micMuted }) => {
-  Menu.buildFromTemplate([
-    ...timerMenuItems(timerActive),
+function outputMenuItems() {
+  if (!settings.get().modules.output) return [];
+  if (!outputs || !outputs.devices || outputs.devices.length < 2) return [];
+  return [
+    { label: 'Saída de áudio', enabled: false },
+    ...outputs.devices.map((d) => ({
+      label: d.name,
+      type: 'radio',
+      checked: d.id === outputs.id,
+      click: () => media && media.stdin.write(`output ${d.id}\n`),
+    })),
     { type: 'separator' },
+  ];
+}
+
+ipcMain.on('set-output', (_e, id) => {
+  if (media && outputs && outputs.devices.some((d) => d.id === id)) media.stdin.write(`output ${id}\n`);
+});
+
+ipcMain.on('context-menu', (_e, { timerActive, micMuted }) => {
+  const timer = timerMenuItems(timerActive);
+  Menu.buildFromTemplate([
+    ...timer,
+    ...(timer.length ? [{ type: 'separator' }] : []),
+    ...outputMenuItems(),
     { label: 'Som mudo', click: () => media && media.stdin.write('mute\n') },
-    {
+    ...(settings.get().modules.mic ? [{
       label: micMuted ? 'Desmutar microfone' : 'Mutar microfone',
       click: () => media && media.stdin.write('micmute\n'),
-    },
+    }] : []),
     { type: 'separator' },
+    { label: 'Configurações…', click: () => openSettings() },
     { label: 'Sair', click: () => app.quit() },
   ]).popup({ window: win });
 });
 
+// ---------------------------------------------------------------- settings window
+
+function settingsInfo() {
+  return {
+    version: app.getVersion(),
+    electron: process.versions.electron,
+    versionLine: `Versão ${app.getVersion()} · Windows`,
+    settingsFile: settings.file(),
+    obsLogs: OBS_LOGS,
+    launchAtLogin: app.getLoginItemSettings().openAtLogin,
+  };
+}
+
+function openSettings(page) {
+  if (settingsWin && !settingsWin.isDestroyed()) {
+    if (settingsWin.isMinimized()) settingsWin.restore();
+    settingsWin.show();
+    settingsWin.focus();
+    if (page) settingsWin.webContents.send('settings:navigate', page);
+    return;
+  }
+  settingsWin = new BrowserWindow({
+    width: 880,
+    height: 600,
+    minWidth: 720,
+    minHeight: 480,
+    frame: false,
+    show: false,
+    backgroundColor: '#141416',
+    title: 'Configurações do Tandem',
+    icon: path.join(__dirname, 'assets', 'icon.ico'),
+    webPreferences: {
+      preload: path.join(__dirname, 'settings', 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+  settingsWin.removeMenu();
+  settingsWin.loadFile(path.join('settings', 'index.html'));
+  settingsWin.once('ready-to-show', () => {
+    settingsWin.show();
+    if (page) settingsWin.webContents.send('settings:navigate', page);
+  });
+  settingsWin.on('closed', () => {
+    settingsWin = null;
+    shortcutsPaused = false; // in case the window closed while recording a shortcut
+    applyShortcuts();
+  });
+}
+
+function broadcastSettings() {
+  const s = settings.get();
+  if (win && !win.isDestroyed()) win.webContents.send('settings', s);
+  if (settingsWin && !settingsWin.isDestroyed()) settingsWin.webContents.send('settings', s, settingsInfo());
+}
+
+function onSettingsChanged(_s, key) {
+  if (key === '*' || key.startsWith('shortcuts')) applyShortcuts();
+  if (key === '*' || key === 'hideInFullscreen') updateVisibility();
+  broadcastSettings();
+}
+
+ipcMain.handle('settings:get', () => ({ settings: settings.get(), info: settingsInfo() }));
+
+ipcMain.handle('settings:set', (_e, key, value) => {
+  if (key === '$launchAtLogin') {
+    app.setLoginItemSettings({ openAtLogin: !!value });
+    broadcastSettings();
+  } else {
+    settings.set(key, value);
+  }
+  return { settings: settings.get(), info: settingsInfo() };
+});
+
+ipcMain.handle('settings:action', (_e, name) => {
+  switch (name) {
+    case 'reloadIsland':
+      if (win) win.reload();
+      return { message: 'Ilha recarregada' };
+    case 'openSettingsFolder':
+      shell.showItemInFolder(settings.file());
+      return {};
+    case 'openRepo':
+      shell.openExternal('https://github.com/lwbios/tandem-desktop');
+      return {};
+    case 'reset':
+      settings.reset();
+      return { settings: settings.get(), info: settingsInfo(), message: 'Configurações restauradas' };
+    default:
+      return {};
+  }
+});
+
+ipcMain.on('settings:window', (_e, cmd) => {
+  if (!settingsWin) return;
+  if (cmd === 'minimize') settingsWin.minimize();
+  if (cmd === 'close') settingsWin.close();
+});
+
+// The island page asks for settings when it loads.
+ipcMain.handle('island:settings', () => settings.get());
+
+// ---------------------------------------------------------------- global shortcuts
+
+function toggleIsland() {
+  userHidden = !userHidden;
+  updateVisibility();
+}
+
+const SHORTCUT_ACTIONS = {
+  toggleIsland: () => toggleIsland(),
+  openSettings: () => openSettings(),
+  toggleMic: () => media && media.stdin.write('micmute\n'),
+  playPause: () => media && media.stdin.write('toggle\n'),
+};
+
+let shortcutsPaused = false;
+
+function applyShortcuts() {
+  globalShortcut.unregisterAll();
+  if (shortcutsPaused) return;
+  for (const [name, accel] of Object.entries(settings.get().shortcuts)) {
+    if (!accel || !SHORTCUT_ACTIONS[name]) continue;
+    try {
+      if (!globalShortcut.register(accel, SHORTCUT_ACTIONS[name])) console.error(`[shortcut] taken: ${accel}`);
+    } catch (err) {
+      console.error(`[shortcut] invalid: ${accel}`, err.message);
+    }
+  }
+}
+
+// Paused while the settings window records a new combination.
+ipcMain.on('shortcuts:pause', (_e, paused) => {
+  shortcutsPaused = !!paused;
+  applyShortcuts();
+});
+
+ipcMain.handle('settings:shortcut', (_e, name, accel) => {
+  if (!(name in SHORTCUT_ACTIONS)) return { ok: false, error: 'Atalho desconhecido.' };
+  if (accel) {
+    const usedBy = Object.entries(settings.get().shortcuts).find(([n, a]) => n !== name && a === accel);
+    if (usedBy) return { ok: false, error: 'Esse atalho já está sendo usado em outra ação.' };
+    // Probe: if Windows or another app owns the combination, registration fails.
+    let free = false;
+    try {
+      free = globalShortcut.register(accel, () => {});
+      if (free) globalShortcut.unregister(accel);
+    } catch {
+      return { ok: false, error: 'Combinação inválida.' };
+    }
+    if (!free) return { ok: false, error: 'Esse atalho já está em uso por outro app.' };
+  }
+  settings.set(`shortcuts.${name}`, accel);
+  return { ok: true, settings: settings.get() };
+});
+
 app.whenReady().then(() => {
+  settings.load();
+  settings.onChange(onSettingsChanged);
   createWindow();
+  applyShortcuts();
   createTray();
   startMediaWatcher();
+  setInterval(pollObs, 1000);
 
   screen.on('display-metrics-changed', () => {
     const { bounds } = screen.getPrimaryDisplay();
@@ -209,5 +493,9 @@ app.whenReady().then(() => {
 
 app.on('before-quit', () => {
   quitting = true;
+  globalShortcut.unregisterAll();
   if (media) media.kill();
 });
+
+// The island is the app: closing the settings window must not quit.
+app.on('window-all-closed', (e) => e.preventDefault());

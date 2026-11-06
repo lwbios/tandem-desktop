@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'">
+  <title>Configurações do Tandem</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <button class="profile" data-page="about">
+        <img src="../assets/icon.png" alt="">
+        <span>
+          <strong>Tandem</strong>
+          <small id="profileVersion">Versão</small>
+        </span>
+      </button>
+      <nav id="nav"></nav>
+    </aside>
+
+    <main class="content">
+      <header class="topbar">
+        <div class="history">
+          <button id="back" aria-label="Voltar"><svg viewBox="0 0 24 24"><path d="M15 5 8 12l7 7"/></svg></button>
+          <button id="forward" aria-label="Avançar"><svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg></button>
+        </div>
+        <div class="drag"></div>
+        <div class="window-buttons">
+          <button data-window="minimize" aria-label="Minimizar"><svg viewBox="0 0 24 24"><path d="M6 12h12"/></svg></button>
+          <button data-window="close" class="close" aria-label="Fechar"><svg viewBox="0 0 24 24"><path d="m7 7 10 10M17 7 7 17"/></svg></button>
+        </div>
+      </header>
+      <div class="scroll">
+        <div class="page" id="page"></div>
+      </div>
+    </main>
+  </div>
+  <div class="toast" id="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>

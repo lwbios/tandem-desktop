@@ -28,27 +28,71 @@ $AsStreamForRead = [System.IO.WindowsRuntimeStreamExtensions].GetMethod('AsStrea
 
 $mgr = Await ($SessionManager::RequestAsync()) $SessionManager
 
-# Volume, mic mute/level and mic capture sessions through Core Audio (see audio.cs).
-Add-Type -Path (Join-Path $PSScriptRoot 'audio.cs')
+# Core Audio, camera sensor activity and fullscreen detection (see native.cs).
+Add-Type -Path (Join-Path $PSScriptRoot 'native.cs')
 $lastVol = $null
 
-# Apps capturing from a microphone right now, by process name.
-# Also fills $script:micPaths (name -> exe path) so the app can show each app's icon.
-$micPaths = @{}
-function Get-MicApps {
+# Process ids -> distinct process names. Also fills $script:appPaths (name -> exe
+# path) so the app can show each app's icon.
+$appPaths = @{}
+function Get-AppNames($procIds) {
     $names = New-Object System.Collections.Generic.List[string]
-    foreach ($procId in [IslandAudio]::MicCapturePids()) {
+    foreach ($procId in $procIds) {
         try { $proc = [System.Diagnostics.Process]::GetProcessById([int]$procId) } catch { continue }
         $name = $proc.ProcessName
         if (-not $names.Contains($name)) { $names.Add($name) }
-        if (-not $script:micPaths.ContainsKey($name)) {
-            try { $script:micPaths[$name] = $proc.MainModule.FileName } catch {}
+        if (-not $script:appPaths.ContainsKey($name)) {
+            try { $script:appPaths[$name] = $proc.MainModule.FileName } catch {}
         }
     }
     return ,$names.ToArray()
 }
+function Get-MicApps { return ,(Get-AppNames ([IslandAudio]::MicCapturePids())) }
 $micApps = @()
 $lastMic = $null
+
+# Camera: the sensor monitor calls back on its own thread; we just read its state.
+$cameraError = [SensorWatch]::Start()
+if ($cameraError) { [Console]::Error.WriteLine("camera monitor: $cameraError") }
+$lastCamera = $null
+
+# Fullscreen app or game on the primary monitor.
+$lastFullscreen = $null
+
+# Audio output: default device, the list for the menu, and Bluetooth battery.
+$lastOutputId = $null
+$lastOutputList = $null
+$outputBattery = $null
+$batteryCheckedAt = [DateTime]::MinValue
+$outputs = @()
+
+# Bluetooth headsets expose their battery as a PnP property on the paired device.
+function Get-BtBattery([string]$deviceName) {
+    if (-not $deviceName) { return $null }
+    $devices = Get-PnpDevice -PresentOnly -ErrorAction SilentlyContinue |
+        Where-Object { $_.FriendlyName -and $_.FriendlyName -like "*$deviceName*" }
+    foreach ($d in $devices) {
+        $p = Get-PnpDeviceProperty -InstanceId $d.InstanceId -KeyName '{104EA319-6EE2-4701-BD47-8DDBF425BBE5} 2' -ErrorAction SilentlyContinue
+        if ($p -and $null -ne $p.Data) { return [int]$p.Data }
+    }
+    return $null
+}
+
+function Emit-Output([bool]$initial, [bool]$changed) {
+    $cur = [IslandAudio]::DefaultOutput()
+    Emit @{
+        type     = 'output'
+        initial  = $initial
+        changed  = $changed
+        id       = $cur.Id
+        name     = $cur.Name
+        desc     = $cur.Description
+        device   = $cur.Device
+        bt       = $cur.Bluetooth
+        battery  = $script:outputBattery
+        devices  = @($script:outputs | ForEach-Object { @{ id = $_.Id; name = $_.Name } })
+    }
+}
 
 # Discord shows "channel | Server - Discord" (or "@friend - Discord") in its window
 # title. That is the channel being viewed, which is usually the voice one. When the
@@ -106,6 +150,7 @@ while ($true) {
             if ($cmd -match '^vol ([0-9.]+)$') { [IslandAudio]::SetVolume([float]$Matches[1]); $cmd = '' }
             elseif ($cmd -eq 'mute') { [IslandAudio]::ToggleMute(); $cmd = '' }
             elseif ($cmd -eq 'micmute') { [IslandAudio]::ToggleMicMute(); $cmd = '' }
+            elseif ($cmd -match '^output (.+)$') { [IslandAudio]::SetDefaultOutput($Matches[1]); $cmd = '' }
             $s = $mgr.GetCurrentSession()
             if ($s -and $cmd) {
                 switch ($cmd) {
@@ -148,8 +193,56 @@ while ($true) {
         if ($micActive -or $micKey -ne $lastMic) {
             $level = 0
             if ($micActive -and -not $micMuted) { try { $level = [Math]::Round([IslandAudio]::GetMicPeak(), 3) } catch {} }
-            Emit @{ type = 'mic'; active = $micActive; muted = $micMuted; apps = $micApps; level = $level; discord = $discord; paths = $micPaths }
+            Emit @{ type = 'mic'; active = $micActive; muted = $micMuted; apps = $micApps; level = $level; discord = $discord; paths = $appPaths }
             $lastMic = $micKey
+        }
+    } catch {}
+
+    # Camera in use (state kept up to date by the sensor monitor callback).
+    try {
+        $camApps = Get-AppNames ([SensorWatch]::CameraPids())
+        $camKey = $camApps -join ','
+        if ($camKey -ne $lastCamera) {
+            Emit @{ type = 'camera'; active = ($camApps.Count -gt 0); apps = $camApps; paths = $appPaths }
+            $lastCamera = $camKey
+        }
+    } catch {}
+
+    # Fullscreen app or game in front: the island hides itself.
+    try {
+        $fsPid = [ScreenState]::FullscreenPid()
+        $fsActive = $fsPid -ne 0
+        if ($fsActive -ne $lastFullscreen) {
+            $fsApp = ''
+            if ($fsActive) { try { $fsApp = [System.Diagnostics.Process]::GetProcessById([int]$fsPid).ProcessName } catch {} }
+            Emit @{ type = 'fullscreen'; active = $fsActive; app = $fsApp }
+            $lastFullscreen = $fsActive
+        }
+    } catch {}
+
+    # Audio output: default device every loop, the device list once a second, and the
+    # Bluetooth battery when the device changes and then every two minutes.
+    try {
+        $outId = [IslandAudio]::DefaultOutputId()
+        $outChanged = $outId -ne $lastOutputId
+        $listChanged = $false
+        if ($tick -le 0 -or $outChanged) {
+            $script:outputs = [IslandAudio]::Outputs()
+            $listKey = ($script:outputs | ForEach-Object { $_.Id }) -join '|'
+            $listChanged = $listKey -ne $lastOutputList
+            $lastOutputList = $listKey
+        }
+        $batteryChanged = $false
+        if ($outChanged -or ([DateTime]::Now - $batteryCheckedAt).TotalSeconds -gt 120) {
+            $cur = [IslandAudio]::DefaultOutput()
+            $newBattery = if ($cur.Bluetooth) { Get-BtBattery $cur.Device } else { $null }
+            $batteryChanged = $newBattery -ne $outputBattery
+            $outputBattery = $newBattery
+            $batteryCheckedAt = [DateTime]::Now
+        }
+        if ($outChanged -or $listChanged -or $batteryChanged) {
+            Emit-Output ($null -eq $lastOutputId) ($outChanged -and $null -ne $lastOutputId)
+            $lastOutputId = $outId
         }
     } catch {}
 

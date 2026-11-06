@@ -9,6 +9,10 @@ Uma pílula no topo da tela do Windows, inspirada na Dynamic Island, que se expa
 - **Timer**: botões de 1/5/10/25 min na ilha aberta ou pelo clique direito. A contagem aparece ao lado da música, e ao terminar a ilha treme e toca um alarme.
 - **Microfone / chamadas**: detecta quais apps estão usando o microfone e mostra o ícone do app com um medidor de voz. Fora da visão de chamada, aparece uma bolinha amarela; com o mic mudo, um microfone vermelho riscado. Clique para mutar/desmutar.
 - **Discord**: durante uma chamada, mostra o nome do servidor e do canal (lidos do título da janela do Discord).
+- **Câmera em uso**: bolinha verde enquanto algum app transmite da câmera (mesma fonte do aviso de câmera do Windows).
+- **Gravação no OBS**: "REC" (ou "AO VIVO") com o tempo decorrido e uma bolinha vermelha piscando. Lido do log do OBS, sem precisar ativar o WebSocket nem senha.
+- **Saída de áudio e fones Bluetooth**: ao trocar a saída (ex.: conectar um fone), aparece o nome do dispositivo e, em fones Bluetooth que informam, a bateria. Clique direito na ilha para escolher a saída de áudio.
+- **Tela cheia e jogos**: a ilha some sozinha quando um jogo ou app em tela cheia está na frente no monitor principal, e volta quando você sai.
 - **Bateria**: aviso de "Carregando" ao conectar o carregador; relógio, data e bateria na ilha aberta quando nada está tocando.
 
 Fora da pílula os cliques passam direto para o que está atrás, então ela não atrapalha.
@@ -26,16 +30,26 @@ npm install
 npm start
 ```
 
-Um ícone em forma de pílula aparece na bandeja do sistema com as opções **Iniciar com o Windows**, **Recarregar** e **Sair**.
+O ícone do Tandem aparece na bandeja do sistema. Clique duas vezes nele (ou use **Ctrl+Alt+O**) para abrir as **Configurações**:
+
+- **Geral**: iniciar com o Windows e esconder em tela cheia.
+- **Aparência**: tamanho da ilha, distância do topo e reduzir animações.
+- **Atalhos**: atalhos globais para mostrar/ocultar a ilha (padrão **Ctrl+Alt+I**), abrir as configurações, mutar o microfone e tocar/pausar a música.
+- **Avançado**: recarregar a ilha, abrir a pasta de configurações e restaurar padrões.
+- **Módulos**: liga/desliga cada recurso da ilha e suas opções (tempos do timer, som do alarme, passo da rodinha do volume, nome do servidor do Discord, bateria de fones...).
+
+As configurações ficam em `%APPDATA%\tandem-desktop\settings.json`.
 
 ## Como funciona
 
 | Arquivo | Papel |
 | --- | --- |
-| `main.js` | Processo principal do Electron: janela transparente sempre no topo, clique-através, bandeja, menu de contexto e ícones dos apps. |
-| `media.ps1` | Processo PowerShell que emite uma linha JSON por evento: mídia (WinRT `GlobalSystemMediaTransportControls`), volume e microfone. Recebe comandos (`toggle`, `next`, `prev`, `vol 0.5`, `mute`, `micmute`) pela entrada padrão. |
-| `audio.cs` | Helpers de Core Audio carregados pelo PowerShell: volume, mudo e nível do microfone, e sessões de captura ativas. |
+| `main.js` | Processo principal do Electron: janela transparente sempre no topo, clique-através, bandeja, menu de contexto, ícones dos apps, esconder em tela cheia e leitura do log do OBS. |
+| `media.ps1` | Processo PowerShell que emite uma linha JSON por evento: mídia (WinRT `GlobalSystemMediaTransportControls`), volume, saída de áudio, microfone, câmera e tela cheia. Recebe comandos (`toggle`, `next`, `prev`, `vol 0.5`, `mute`, `micmute`, `output <id>`) pela entrada padrão. |
+| `native.cs` | Helpers nativos carregados pelo PowerShell: Core Audio (volume, saídas, microfone e sessões de captura), monitor de atividade de sensores do Media Foundation (câmera) e detecção de tela cheia. |
 | `preload.js` | Ponte segura (`contextBridge`) entre o processo principal e a página. |
+| `settings.js` | Configurações persistentes com padrões e avisos de mudança. |
+| `settings/` | A janela de configurações (página, estilo, lógica e preload próprio). |
 | `index.html`, `style.css`, `renderer.js` | A ilha em si: estados, animações, timer, relógio e bateria. |
 | `assets/` | Logo original e ícones gerados: `icon.ico`/`icon.png` (app) e `tray-dark.ico`/`tray-light.ico` (bandeja, trocados conforme o tema da barra de tarefas). |
 | `scripts/make-icons.ps1` | Gera todos os ícones a partir de `assets/logo.png` (1024×1024, logo branca em fundo transparente). |
@@ -50,4 +64,6 @@ powershell -ExecutionPolicy Bypass -File scripts/make-icons.ps1
 
 - O nome do servidor do Discord vem do canal que está aberto na janela, que nem sempre é o canal de voz.
 - O mudo da ilha é o mudo do microfone no Windows; o mudo interno de apps como o Discord não é detectado.
-- Pensado para o monitor principal.
+- Pensado para o monitor principal (inclusive a detecção de tela cheia).
+- A bateria só aparece para fones Bluetooth que reportam o nível ao Windows.
+- Trocar a saída de áudio usa uma interface não documentada do Windows (`IPolicyConfig`), estável desde o Windows 7.

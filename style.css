@@ -285,11 +285,21 @@ html, body {
 /* ---------- microphone ---------- */
 :root { --amber: #ffb800; --red: #ff453a; }
 
-#micIndicator {
+/* Privacy indicators on the right: recording (red), camera (green), mic (amber). */
+#island { --ind: 0; }
+#indicators {
   position: absolute;
   z-index: 5;
   top: 10px;
   right: 12px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+/* expanded views use every corner, so the dots move to the top centre */
+.expanded #indicators { top: 7px; right: 50%; transform: translateX(50%); }
+.indicator {
   width: 14px;
   height: 14px;
   padding: 0;
@@ -297,12 +307,10 @@ html, body {
   background: transparent;
   display: none;
   place-items: center;
-  cursor: pointer;
-  transition: top 0.5s var(--spring), right 0.5s var(--spring);
 }
-.mic-on #micIndicator { display: grid; }
-.expanded #micIndicator { top: 16px; right: 20px; }
-#micIndicator .dot {
+.mic-on #micIndicator, .cam-on #camIndicator, .rec-on #recIndicator { display: grid; }
+#micIndicator { cursor: pointer; }
+.indicator .dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
@@ -311,15 +319,18 @@ html, body {
   animation: glow 2s ease-in-out infinite;
 }
 @keyframes glow { 50% { box-shadow: 0 0 2px rgba(255, 184, 0, 0.4); } }
+#camIndicator .dot { background: var(--green); box-shadow: 0 0 6px rgba(52, 199, 89, 0.8); animation: none; }
+#recIndicator .dot { background: var(--red); box-shadow: 0 0 6px rgba(255, 69, 58, 0.8); animation: blink 1.4s ease-in-out infinite; }
+@keyframes blink { 50% { opacity: 0.35; } }
 #micIndicator .muted-ico { display: none; width: 14px; height: 14px; }
 .mic-muted #micIndicator .dot { display: none; }
 .mic-muted #micIndicator .muted-ico { display: block; }
-/* the call view already shows the mic, keep the dot out of its way */
-#island.call #micIndicator { display: none; }
+/* views that already show the thing don't need its dot */
+#island.call #micIndicator, #island.callview #micIndicator { display: none; }
+#island.rec #recIndicator { display: none; }
 
-/* make room for the indicator on the right of compact views */
-.mic-on .compact { padding-right: 30px; }
-#island.mic-on.media, #island.mic-on.timer { width: 270px; }
+/* make room for the visible dots (renderer sets --ind) on the right of compact views */
+.compact { padding-right: calc(10px + var(--ind) * 20px); }
 
 .mic-ico { width: 16px; height: 16px; fill: #fff; flex: none; }
 .mic-ico .slash { fill: none; stroke: #000; stroke-width: 4; display: none; }
@@ -328,7 +339,7 @@ html, body {
 .mic-muted .mic-ico .slash { display: block; stroke: var(--red); stroke-width: 2; stroke-linecap: round; }
 
 #island.call { width: 240px; }
-#compactCall { padding-left: 12px; padding-right: 12px !important; }
+#compactCall { padding-left: 12px; }
 .call-label { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; min-width: 0; }
 .call-app { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
 .call-right { display: flex; align-items: center; }
@@ -389,3 +400,30 @@ html, body {
   background: center / contain no-repeat;
   border-radius: 0;
 }
+
+/* ---------- OBS recording ---------- */
+#island.rec { width: calc(190px + var(--ind) * 20px); }
+.rec-label { display: flex; align-items: center; gap: 7px; padding-left: 8px; font-size: 13px; font-weight: 700; color: var(--red); letter-spacing: 0.5px; }
+.rec-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--red); animation: blink 1.4s ease-in-out infinite; }
+.rec-time { color: var(--red); font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* ---------- audio output toast ---------- */
+#island.output { width: 310px; }
+.out-label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; min-width: 0; padding-left: 6px; }
+.out-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 190px; }
+.out-ico { width: 18px; height: 18px; fill: #fff; flex: none; display: none; }
+.out-headphones .out-ico.headphones, .out-speaker .out-ico.speaker-ico { display: block; }
+.out-battery { display: none; align-items: center; gap: 6px; color: var(--green); font-size: 13px; font-weight: 600; }
+.out-has-battery .out-battery { display: flex; }
+
+/* widths grow with the dots (these come last so they win) */
+#island.media { width: calc(250px + var(--ind) * 20px); }
+#island.timer { width: calc(200px + var(--ind) * 20px); }
+#island.call { width: calc(240px + var(--ind) * 20px); }
+#island.has-avatar.call { width: calc(260px + var(--ind) * 20px); }
+
+/* ---------- settings: reduce motion ---------- */
+.reduce-motion #island { transition-timing-function: ease !important; transition-duration: 0.2s !important; }
+.reduce-motion #island.bump { transform: translateX(-50%); }
+.reduce-motion #island.alarm { animation: none; }
+.reduce-motion .layer { filter: none; transform: none; }

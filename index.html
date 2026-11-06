@@ -9,11 +9,31 @@
 <body>
   <div id="island" class="idle">
 
-    <!-- mic in use: amber dot, or red crossed mic when muted (sits above every view) -->
-    <button id="micIndicator" aria-label="Microfone">
-      <i class="dot"></i>
-      <svg viewBox="0 0 24 24" class="mic-ico muted-ico"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-3.1A7 7 0 0 0 19 11Z"/><path class="slash" d="m4 3 17 18"/></svg>
-    </button>
+    <!-- privacy dots above every view: OBS recording, camera, mic (red crossed mic when muted) -->
+    <div id="indicators">
+      <span class="indicator" id="recIndicator" title="Gravando no OBS"><i class="dot"></i></span>
+      <span class="indicator" id="camIndicator" title="Câmera em uso"><i class="dot"></i></span>
+      <button class="indicator" id="micIndicator" aria-label="Microfone">
+        <i class="dot"></i>
+        <svg viewBox="0 0 24 24" class="mic-ico muted-ico"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-3.1A7 7 0 0 0 19 11Z"/><path class="slash" d="m4 3 17 18"/></svg>
+      </button>
+    </div>
+
+    <!-- compact: OBS recording / live -->
+    <div class="layer compact" id="compactRec">
+      <span class="rec-label"><i class="rec-dot"></i><span class="rec-kind">REC</span></span>
+      <span class="rec-time">0:00</span>
+    </div>
+
+    <!-- compact: audio output changed -->
+    <div class="layer compact" id="compactOutput">
+      <span class="out-label">
+        <svg viewBox="0 0 24 24" class="out-ico headphones"><path d="M12 3a9 9 0 0 0-9 9v6a3 3 0 0 0 3 3h1a1 1 0 0 0 1-1v-6a1 1 0 0 0-1-1H5v-1a7 7 0 0 1 14 0v1h-2a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h1a3 3 0 0 0 3-3v-6a9 9 0 0 0-9-9Z"/></svg>
+        <svg viewBox="0 0 24 24" class="out-ico speaker-ico"><path d="M17 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2Zm-5 2.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 19a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z"/></svg>
+        <span class="out-name"></span>
+      </span>
+      <span class="out-battery"><span class="battery out-bat"><span class="lvl"></span></span><span class="out-pct"></span></span>
+    </div>
 
     <!-- compact: in a call -->
     <div class="layer compact" id="compactCall">
