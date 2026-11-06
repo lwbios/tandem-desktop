@@ -5,166 +5,168 @@
 <h1 align="center">Tandem</h1>
 
 <p align="center">
-  Uma pílula no topo da tela que mostra o que está acontecendo no seu PC,<br>
-  e um lançador que abre tudo com <b>Alt+Espaço</b>.
+  A smart pill at the top of your screen that shows what your PC is doing,<br>
+  and a launcher that opens everything with <b>Alt+Space</b>.
 </p>
 
 <p align="center">
-  <a href="https://github.com/lwbios/tandem-desktop/releases/latest"><b>⬇ Baixar para Windows</b></a>
+  <a href="https://github.com/lwbios/tandem-desktop/releases/latest"><b>⬇ Download for Windows</b></a>
   &nbsp;·&nbsp;
-  <a href="#recursos">Recursos</a>
+  <a href="#features">Features</a>
   &nbsp;·&nbsp;
-  <a href="#atalhos">Atalhos</a>
+  <a href="#shortcuts">Shortcuts</a>
   &nbsp;·&nbsp;
-  <a href="#perguntas-frequentes">Perguntas frequentes</a>
+  <a href="#faq">FAQ</a>
 </p>
 
----
-
-## Instalação
-
-1. Baixe o **Tandem Setup.exe** na [página de downloads](https://github.com/lwbios/tandem-desktop/releases/latest).
-2. Abra o instalador e siga os passos. O Tandem abre sozinho no final.
-3. Se o Windows mostrar "O Windows protegeu o computador", clique em **Mais informações → Executar assim mesmo**. Isso acontece porque o instalador ainda não tem assinatura digital.
-
-Pronto: a pílula aparece no topo da tela e o ícone do Tandem fica na bandeja, perto do relógio. Clique duas vezes nele para abrir as configurações.
-
-**Requisitos:** Windows 10 ou 11.
+<p align="center"><sub>The app's interface is currently in Portuguese (Brazil).</sub></p>
 
 ---
 
-## Recursos
+## Installation
 
-### A pílula
+1. Download **Tandem-Setup.exe** from the [downloads page](https://github.com/lwbios/tandem-desktop/releases/latest).
+2. Run the installer and follow the steps. Tandem starts on its own when it finishes.
+3. If Windows shows "Windows protected your PC", click **More info → Run anyway**. This happens because the installer isn't digitally signed yet.
 
-Fica no topo da tela, discreta, e cresce com uma animação suave quando algo acontece. Passe o mouse em cima para ver mais detalhes. Fora dela, os cliques passam direto para o que está atrás.
+That's it: the pill appears at the top of the screen and the Tandem icon sits in the system tray, next to the clock. Double-click it to open the settings.
+
+**Requirements:** Windows 10 or 11.
+
+---
+
+## Features
+
+### The pill
+
+It sits quietly at the top of the screen and grows with a smooth animation when something happens. Hover over it for more details. Clicks outside the pill go straight through to whatever is behind it.
 
 | | |
 | --- | --- |
-| 🎵 **Tocando agora** | Capa do álbum e equalizador para Spotify, YouTube e qualquer app de mídia. Com o mouse em cima: título, artista, progresso e os botões ⏮ ⏯ ⏭. |
-| 🔊 **Volume** | Aviso com barra sempre que o volume muda. A rodinha do mouse sobre a pílula ajusta o volume. |
-| 🎧 **Fones e saída de áudio** | Ao conectar um fone, mostra o nome e a bateria (em fones Bluetooth compatíveis). Troque a saída de áudio com o botão direito. |
-| 🎙️ **Microfone e chamadas** | Bolinha amarela quando algum app usa o microfone, com o ícone do app e um medidor de voz. Microfone mudo vira um ícone vermelho; clique para mutar ou desmutar. No Discord, mostra o servidor e o canal. |
-| 📷 **Câmera** | Bolinha verde enquanto algum app usa a câmera. |
-| 🔴 **Gravação no OBS** | "REC" ou "AO VIVO" com o tempo decorrido, sem precisar configurar nada no OBS. |
-| ⏱️ **Timer** | Tempos rápidos na pílula ou no botão direito. Ao terminar, a pílula balança e toca um aviso. |
-| 🔋 **Bateria** | Aviso de "Carregando" ao ligar o carregador. |
-| 🎮 **Tela cheia** | Em jogos e vídeos em tela cheia, a pílula sai da frente sozinha. |
+| 🎵 **Now playing** | Album art and an equalizer for Spotify, YouTube and any media app. On hover: title, artist, progress and ⏮ ⏯ ⏭ controls. |
+| 🔊 **Volume** | A bar whenever the volume changes. Scroll over the pill to change the volume. |
+| 🎧 **Headphones and audio output** | When headphones connect, shows their name and battery (on supported Bluetooth headsets). Switch the audio output with a right-click. |
+| 🎙️ **Microphone and calls** | A yellow dot when an app is using the microphone, with the app's icon and a voice meter. A muted mic turns into a red icon; click to mute or unmute. In Discord, it shows the server and channel. |
+| 📷 **Camera** | A green dot while an app is using the camera. |
+| 🔴 **OBS recording** | "REC" or "LIVE" with the elapsed time, with nothing to set up in OBS. |
+| ⏱️ **Timer** | Quick timers from the pill or the right-click menu. When it ends, the pill shakes and plays a chime. |
+| 🔋 **Battery** | A "Charging" notice when you plug in the charger. |
+| 🎮 **Fullscreen** | In fullscreen games and videos, the pill gets out of the way on its own. |
 
-### O lançador (Alt+Espaço)
+### The launcher (Alt+Space)
 
-Uma barra de busca que abre em cima de qualquer janela. Comece a digitar:
+A search bar that opens on top of any window. Just start typing:
 
-| Digite | O que acontece |
+| Type | What happens |
 | --- | --- |
-| `chrome`, `discord`, `vsc` | Abre qualquer app instalado |
-| `2,5*4+10`, `sqrt(16)` | Calculadora (Enter copia o resultado) |
-| `10 km em milhas`, `30 c em f`, `2 gb em mb` | Converte unidades |
-| `100 usd em brl` | Converte moedas com a cotação do dia |
-| `hoje`, `hora em tóquio`, `dias até natal` | Datas, fusos horários e contagens |
-| `#ff9f0a`, `rgb(255, 0, 0)` | Mostra a cor e converte entre HEX, RGB e HSL |
-| `timer 15`, `timer 1h30` | Inicia um timer na pílula |
-| `foco 50` | Modo foco: timer roxo e apps que distraem ficam fora da frente |
-| `yt lofi`, `g receita`, `maps padaria`, `tr hello` | Busca direto no YouTube, Google, Maps, Tradutor… |
-| `relatorio` | Encontra arquivos no seu PC |
-| `fechar spotify` | Fecha um app aberto |
-| `senha`, `uuid` | Gera uma senha forte ou um UUID |
-| `maiúsculas`, `camel`, `acentos` | Transforma o texto que você copiou e cola o resultado |
-| `;data` | Cola um snippet (texto pronto) |
+| `chrome`, `discord`, `vsc` | Opens any installed app |
+| `2.5*4+10`, `sqrt(16)` | Calculator (Enter copies the result) |
+| `10 km to miles`, `30 c to f`, `2 gb to mb` | Unit conversion |
+| `100 usd to brl` | Currency conversion with today's rate |
+| `today`, `time in tokyo`, `days until 2027-01-01` | Dates, time zones and countdowns |
+| `#ff9f0a`, `rgb(255, 0, 0)` | Shows the colour and converts between HEX, RGB and HSL |
+| `timer 15`, `timer 1h30` | Starts a timer on the pill |
+| `focus 50` | Focus mode: a purple timer, and distracting apps are kept out of the way |
+| `yt lofi`, `g recipe`, `maps bakery`, `tr hello` | Searches YouTube, Google, Maps, Translate… directly |
+| `report` | Finds files on your PC |
+| `close spotify` | Closes an open app |
+| `password`, `uuid` | Generates a strong password or a UUID |
+| `uppercase`, `camel`, `snake` | Transforms the text you copied and pastes the result |
+| `;data` | Pastes a snippet (saved text) |
 
-E também:
+And also:
 
-- **Histórico da área de transferência**: tudo o que você copiou (textos e imagens), com prévia. Enter cola no app em que você estava.
-- **Emojis e símbolos**: busca em português ou inglês.
-- **Prints recentes**: seus últimos prints em uma grade; arraste direto para o Discord ou para uma pasta.
-- **Janelas**: metade esquerda, metade direita, maximizar, centralizar…
-- **Sistema**: bloquear, suspender, reiniciar, desligar, esvaziar a lixeira, modo escuro, mudo.
+- **Clipboard history**: everything you copied (text and images), with a preview. Enter pastes into the app you were using.
+- **Emoji & symbols**: search in English or Portuguese.
+- **Recent screenshots**: your latest screenshots in a grid; drag them straight into Discord or a folder.
+- **Window management**: left half, right half, maximize, center…
+- **System**: lock, sleep, restart, shut down, empty the Recycle Bin, dark mode, mute.
 
-### Notas rápidas
+### Quick notes
 
-Uma janelinha de notas que fica por cima das outras e salva enquanto você digita. Abra com **Ctrl+Alt+N**.
+A small notes window that stays on top of other windows and saves as you type. Open it with **Ctrl+Alt+N**.
 
 ### Hyper Key
 
-Opcional, em **Configurações → Geral**: segurando o **Caps Lock**, ele vira Ctrl+Alt+Shift+Win, para você criar atalhos que não batem com nenhum outro programa. Um toque rápido continua ligando o Caps Lock.
+Optional, under **Settings → General**: hold **Caps Lock** and it becomes Ctrl+Alt+Shift+Win, so you can create shortcuts that never clash with other programs. A quick tap still toggles Caps Lock.
 
 ---
 
-## Atalhos
+## Shortcuts
 
-| Atalho | Ação |
+| Shortcut | Action |
 | --- | --- |
-| **Alt+Espaço** | Abrir o lançador |
-| **Ctrl+Alt+N** | Abrir/fechar as notas |
-| **Ctrl+Alt+I** | Mostrar/ocultar a pílula |
-| **Ctrl+Alt+O** | Abrir as configurações |
+| **Alt+Space** | Open the launcher |
+| **Ctrl+Alt+N** | Show/hide notes |
+| **Ctrl+Alt+I** | Show/hide the pill |
+| **Ctrl+Alt+O** | Open settings |
 
-Todos podem ser trocados em **Configurações → Atalhos**, onde também dá para criar atalhos para mutar o microfone e tocar/pausar a música.
+All of them can be changed under **Settings → Shortcuts**, where you can also add shortcuts to mute the microphone and play/pause music.
 
-## Configurações
+## Settings
 
-Clique duas vezes no ícone da bandeja (ou use **Ctrl+Alt+O**). Lá você pode:
+Double-click the tray icon (or press **Ctrl+Alt+O**). From there you can:
 
-- ligar ou desligar cada recurso da pílula;
-- mudar o tamanho e a posição da pílula;
-- criar snippets, quicklinks e pastas favoritas;
-- escolher os apps bloqueados no modo foco;
-- iniciar o Tandem junto com o Windows.
+- turn each pill feature on or off;
+- change the pill's size and position;
+- create snippets, quicklinks and favourite folders;
+- choose which apps are blocked in focus mode;
+- start Tandem with Windows.
 
-## Privacidade
+## Privacy
 
-Tudo roda no seu computador. O Tandem não tem conta, não coleta dados e não envia nada para a internet, exceto:
+Everything runs on your computer. Tandem has no account, collects no data and sends nothing over the internet, except:
 
-- a cotação de moedas, quando você pede uma conversão (serviço público do Banco Central Europeu);
-- as buscas na web que você mesmo abre.
+- exchange rates, when you ask for a currency conversion (a public service based on European Central Bank data);
+- the web searches you open yourself.
 
-O histórico da área de transferência fica só no seu PC e ignora senhas copiadas de gerenciadores de senha.
+Clipboard history stays on your PC and skips passwords copied from password managers.
 
-## Perguntas frequentes
+## FAQ
 
-**A pílula sumiu.** Ela se esconde em tela cheia. Se não for isso, aperte **Ctrl+Alt+I**.
+**The pill disappeared.** It hides in fullscreen. If that's not it, press **Ctrl+Alt+I**.
 
-**O nome do servidor do Discord está errado.** Ele vem do canal aberto na janela do Discord, que nem sempre é o canal de voz.
+**The Discord server name is wrong.** It comes from the channel open in the Discord window, which isn't always your voice channel.
 
-**Mutei no Discord e a pílula não mostrou.** A pílula mostra o mudo do microfone do Windows; o mudo dentro de cada app não é visível para ela.
+**I muted in Discord and the pill didn't show it.** The pill shows the Windows microphone mute; each app's own mute isn't visible to it.
 
-**Meu fone não mostra a bateria.** Só aparece em fones Bluetooth que informam a bateria ao Windows.
+**My headphones don't show the battery.** It only appears for Bluetooth headsets that report their battery to Windows.
 
-**Funciona em dois monitores?** A pílula fica no monitor principal.
+**Does it work with two monitors?** The pill stays on the primary monitor.
 
 ---
 
 <details>
-<summary><b>Para desenvolvedores</b></summary>
+<summary><b>For developers</b></summary>
 
-### Rodar a partir do código
+### Run from source
 
-Precisa do [Node.js](https://nodejs.org/) 18 ou mais novo.
+Requires [Node.js](https://nodejs.org/) 18 or newer.
 
 ```bash
 npm install
 npm start
 ```
 
-### Gerar o instalador
+### Build the installer
 
 ```bash
 npm run dist
 ```
 
-O instalador sai em `dist/`. A versão instalada guarda as configurações em `%APPDATA%\Tandem`.
+The installer is written to `dist/`. The installed app keeps its settings in `%APPDATA%\Tandem`.
 
-### Como o projeto é organizado
+### Project layout
 
-| Arquivo | Papel |
+| File | Role |
 | --- | --- |
-| `main.js` | Processo principal do Electron: janela da pílula, bandeja, atalhos globais, modo foco e leitura do log do OBS. |
-| `index.html`, `style.css`, `renderer.js`, `preload.js` | A pílula: estados, animações, timer, relógio e bateria. |
-| `media.ps1` | Processo PowerShell que envia uma linha JSON por evento (mídia, volume, saída de áudio, microfone, câmera, tela cheia, janela em foco) e recebe comandos pela entrada padrão. |
-| `native.cs` | Código nativo carregado pelo PowerShell: Core Audio, câmera (Media Foundation), tela cheia, janelas e Hyper Key. |
-| `settings.js`, `settings/` | Configurações salvas e a janela de configurações. |
-| `launcher-main.js`, `launcher/` | O lançador: apps, histórico da área de transferência, ações, calculadora, conversores e emojis. |
-| `notes-main.js`, `notes/` | A janela de notas. |
-| `assets/`, `scripts/make-icons.ps1` | Logo e ícones; o script gera todos os ícones a partir de `assets/logo.png`. |
+| `main.js` | Electron main process: pill window, tray, global shortcuts, focus mode and the OBS log reader. |
+| `index.html`, `style.css`, `renderer.js`, `preload.js` | The pill: states, animations, timer, clock and battery. |
+| `media.ps1` | PowerShell process that prints one JSON line per event (media, volume, audio output, microphone, camera, fullscreen, focused window) and takes commands on standard input. |
+| `native.cs` | Native code loaded by PowerShell: Core Audio, camera (Media Foundation), fullscreen detection, window management and the Hyper Key. |
+| `settings.js`, `settings/` | Saved settings and the settings window. |
+| `launcher-main.js`, `launcher/` | The launcher: apps, clipboard history, actions, calculator, converters and emoji. |
+| `notes-main.js`, `notes/` | The notes window. |
+| `assets/`, `scripts/make-icons.ps1` | Logo and icons; the script builds every icon from `assets/logo.png`. |
 
 </details>
