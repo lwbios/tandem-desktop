@@ -4,6 +4,7 @@ const readline = require('readline');
 const fs = require('fs');
 const { spawn, execFile, execFileSync } = require('child_process');
 const settings = require('./settings');
+const launcher = require('./launcher-main');
 
 const WIDTH = 520;
 const HEIGHT = 240;
@@ -71,6 +72,7 @@ function startMediaWatcher() {
     '-File', path.join(__dirname, 'media.ps1'),
   ], { windowsHide: true });
 
+  media.stdin.write(`ownpid ${process.pid}\napps\n`);
   media.stdout.setEncoding('utf8');
   readline.createInterface({ input: media.stdout }).on('line', (line) => {
     line = line.replace(/^\uFEFF/, '').trim();
@@ -80,6 +82,8 @@ function startMediaWatcher() {
       const msg = JSON.parse(line);
       if (msg.paths) loadAppIcons(msg.paths);
       if (msg.type === 'output') outputs = msg;
+      if (msg.type === 'apps') return launcher.setApps(msg.apps || []);
+      if (msg.type === 'clipboard') return launcher.onClipboardChanged();
       if (msg.type === 'fullscreen') {
         setFullscreen(msg.active);
         return;
@@ -231,6 +235,7 @@ function createTray() {
   tray.setToolTip('Tandem');
   tray.on('double-click', () => openSettings());
   tray.setContextMenu(Menu.buildFromTemplate([
+    { label: 'Abrir o lançador', click: () => launcher.show() },
     { label: 'Configurações…', click: () => openSettings() },
     { label: 'Mostrar/ocultar a ilha', click: () => toggleIsland() },
     { label: 'Recarregar a ilha', click: () => win && win.reload() },
@@ -377,6 +382,7 @@ function broadcastSettings() {
 }
 
 function onSettingsChanged(_s, key) {
+  if (key === '*' || key.startsWith('launcher')) launcher.broadcastSettings();
   if (key === '*' || key.startsWith('shortcuts')) applyShortcuts();
   if (key === '*' || key === 'hideInFullscreen') updateVisibility();
   broadcastSettings();
@@ -396,6 +402,12 @@ ipcMain.handle('settings:set', (_e, key, value) => {
 
 ipcMain.handle('settings:action', (_e, name) => {
   switch (name) {
+    case 'clearClipboard':
+      launcher.clearHistory();
+      return { message: 'Histórico apagado' };
+    case 'openLauncher':
+      launcher.show();
+      return {};
     case 'reloadIsland':
       if (win) win.reload();
       return { message: 'Ilha recarregada' };
@@ -430,6 +442,7 @@ function toggleIsland() {
 }
 
 const SHORTCUT_ACTIONS = {
+  openLauncher: () => launcher.toggle(),
   toggleIsland: () => toggleIsland(),
   openSettings: () => openSettings(),
   toggleMic: () => media && media.stdin.write('micmute\n'),
@@ -480,6 +493,11 @@ app.whenReady().then(() => {
   settings.load();
   settings.onChange(onSettingsChanged);
   createWindow();
+  launcher.init({
+    send: (cmd) => media && media.stdin.write(cmd + '\n'),
+    settings,
+    openSettings: (page) => openSettings(page),
+  });
   applyShortcuts();
   createTray();
   startMediaWatcher();

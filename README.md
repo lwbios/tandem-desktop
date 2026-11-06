@@ -17,6 +17,19 @@ Uma pílula no topo da tela do Windows, inspirada na Dynamic Island, que se expa
 
 Fora da pílula os cliques passam direto para o que está atrás, então ela não atrapalha.
 
+## Lançador (Alt+Espaço)
+
+Inspirado no Raycast: uma barra de busca que abre em cima de tudo.
+
+- **Aplicativos**: todos os apps do menu Iniciar (inclusive os da Microsoft Store), com ícone.
+- **Calculadora**: digite uma conta (`2,5*4`, `(1+2)^3`, `sqrt(16)+pi`) e Enter copia o resultado.
+- **Quicklinks**: `yt lofi`, `g receita de bolo`, `gh electron`, `tr hello world`, `maps padaria`, `wiki brasil`. Dá para criar os seus nas configurações.
+- **Histórico da área de transferência**: textos e imagens copiados, com prévia; Enter cola no app em que você estava, Del apaga. Fica só no seu PC e ignora senhas marcadas por gerenciadores de senha.
+- **Emojis e símbolos**: busca em português ou inglês; Enter cola.
+- **Janelas**: metade esquerda/direita/cima/baixo, maximizar, quase maximizar, centralizar e restaurar a janela em que você estava.
+- **Sistema**: bloquear, suspender, reiniciar, desligar, sair da conta, esvaziar lixeira (pedem confirmação), alternar modo escuro, mudo, microfone, tocar/pausar, Gerenciador de Tarefas, Downloads e Configurações do Windows.
+- Qualquer outra busca vira **Pesquisar na web**.
+
 ## Requisitos
 
 - Windows 10 ou 11
@@ -49,6 +62,7 @@ As configurações ficam em `%APPDATA%\tandem-desktop\settings.json`.
 | `native.cs` | Helpers nativos carregados pelo PowerShell: Core Audio (volume, saídas, microfone e sessões de captura), monitor de atividade de sensores do Media Foundation (câmera) e detecção de tela cheia. |
 | `preload.js` | Ponte segura (`contextBridge`) entre o processo principal e a página. |
 | `settings.js` | Configurações persistentes com padrões e avisos de mudança. |
+| `launcher-main.js`, `launcher/` | O lançador: janela, apps, histórico da área de transferência, ações (processo principal) e a interface com busca, calculadora e emojis. |
 | `settings/` | A janela de configurações (página, estilo, lógica e preload próprio). |
 | `index.html`, `style.css`, `renderer.js` | A ilha em si: estados, animações, timer, relógio e bateria. |
 | `assets/` | Logo original e ícones gerados: `icon.ico`/`icon.png` (app) e `tray-dark.ico`/`tray-light.ico` (bandeja, trocados conforme o tema da barra de tarefas). |

@@ -21,7 +21,20 @@ const DEFAULTS = {
   mic: { discord: true },
   output: { battery: true },
   appearance: { scale: 1, topOffset: 6, reduceMotion: false },
+  launcher: {
+    clipboardHistory: true,
+    clipboardMax: 200,
+    quicklinks: [
+      { name: 'Google', keyword: 'g', url: 'https://www.google.com/search?q={query}' },
+      { name: 'YouTube', keyword: 'yt', url: 'https://www.youtube.com/results?search_query={query}' },
+      { name: 'GitHub', keyword: 'gh', url: 'https://github.com/search?q={query}' },
+      { name: 'Wikipédia', keyword: 'wiki', url: 'https://pt.wikipedia.org/w/index.php?search={query}' },
+      { name: 'Google Tradutor', keyword: 'tr', url: 'https://translate.google.com/?sl=auto&tl=pt&text={query}' },
+      { name: 'Google Maps', keyword: 'maps', url: 'https://www.google.com/maps/search/{query}' },
+    ],
+  },
   shortcuts: {
+    openLauncher: 'Alt+Space',
     toggleIsland: 'Control+Alt+I',
     openSettings: 'Control+Alt+O',
     toggleMic: '',

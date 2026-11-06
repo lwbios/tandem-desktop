@@ -361,3 +361,83 @@ public static class ScreenState {
         return pid;
     }
 }
+
+// ---------------------------------------------------------------- launcher helpers
+
+// Remembers the last window the user was in (anything but Tandem itself), so the
+// launcher can paste into it and move it around after it closes.
+public static class WindowManager {
+    [StructLayout(LayoutKind.Sequential)] struct Rect { public int Left, Top, Right, Bottom; }
+    [StructLayout(LayoutKind.Sequential)] struct MonitorInfo { public int Size; public Rect Monitor; public Rect Work; public uint Flags; }
+
+    [DllImport("user32.dll")] static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll")] static extern bool SetForegroundWindow(IntPtr hwnd);
+    [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint pid);
+    [DllImport("user32.dll")] static extern bool IsWindow(IntPtr hwnd);
+    [DllImport("user32.dll")] static extern bool ShowWindow(IntPtr hwnd, int cmd);
+    [DllImport("user32.dll")] static extern bool IsZoomed(IntPtr hwnd);
+    [DllImport("user32.dll")] static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int w, int h, uint flags);
+    [DllImport("user32.dll")] static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint flags);
+    [DllImport("user32.dll")] static extern bool GetMonitorInfo(IntPtr monitor, ref MonitorInfo info);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetClassName(IntPtr hwnd, StringBuilder name, int max);
+    [DllImport("user32.dll")] static extern void keybd_event(byte vk, byte scan, uint flags, IntPtr extra);
+
+    static IntPtr last = IntPtr.Zero;
+    public static uint OwnPid = 0;
+
+    public static void Track() {
+        IntPtr h = GetForegroundWindow();
+        if (h == IntPtr.Zero) return;
+        uint pid; GetWindowThreadProcessId(h, out pid);
+        if (pid == OwnPid) return;
+        var cls = new StringBuilder(64); GetClassName(h, cls, 64);
+        string c = cls.ToString();
+        if (c == "Shell_TrayWnd" || c == "Progman" || c == "WorkerW") return;
+        last = h;
+    }
+
+    public static bool Focus() {
+        if (last == IntPtr.Zero || !IsWindow(last)) return false;
+        return SetForegroundWindow(last);
+    }
+
+    // Ctrl+V into the remembered window.
+    public static void Paste() {
+        Focus();
+        System.Threading.Thread.Sleep(120);
+        keybd_event(0x11, 0, 0, IntPtr.Zero);       // Ctrl down
+        keybd_event(0x56, 0, 0, IntPtr.Zero);       // V down
+        keybd_event(0x56, 0, 2, IntPtr.Zero);       // V up
+        keybd_event(0x11, 0, 2, IntPtr.Zero);       // Ctrl up
+    }
+
+    // left, right, top, bottom, maximize, center, almost, restore
+    public static string Arrange(string action) {
+        if (last == IntPtr.Zero || !IsWindow(last)) return "no window";
+        var info = new MonitorInfo { Size = Marshal.SizeOf(typeof(MonitorInfo)) };
+        if (!GetMonitorInfo(MonitorFromWindow(last, 2), ref info)) return "no monitor";
+        var w = info.Work;
+        int W = w.Right - w.Left, H = w.Bottom - w.Top;
+        if (action == "maximize") { ShowWindow(last, 3); Focus(); return ""; }
+        if (action == "restore") { ShowWindow(last, 9); Focus(); return ""; }
+        int x = w.Left, y = w.Top, cw = W, ch = H;
+        switch (action) {
+            case "left": cw = W / 2; break;
+            case "right": cw = W / 2; x = w.Left + W - cw; break;
+            case "top": ch = H / 2; break;
+            case "bottom": ch = H / 2; y = w.Top + H - ch; break;
+            case "center": cw = W * 3 / 5; ch = H * 3 / 4; x = w.Left + (W - cw) / 2; y = w.Top + (H - ch) / 2; break;
+            case "almost": cw = W * 9 / 10; ch = H * 9 / 10; x = w.Left + (W - cw) / 2; y = w.Top + (H - ch) / 2; break;
+            default: return "unknown";
+        }
+        if (IsZoomed(last)) ShowWindow(last, 9);
+        SetWindowPos(last, IntPtr.Zero, x, y, cw, ch, 0x0004 | 0x0010); // NOZORDER | NOACTIVATE
+        Focus();
+        return "";
+    }
+}
+
+public static class ClipboardWatch {
+    [DllImport("user32.dll")] static extern uint GetClipboardSequenceNumber();
+    public static uint Sequence() { return GetClipboardSequenceNumber(); }
+}

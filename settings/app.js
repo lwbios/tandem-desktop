@@ -7,6 +7,7 @@ const ICONS = {
   palette: 'M12 3a9 9 0 0 0 0 18c1 0 1.7-.8 1.7-1.7 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-.9.8-1.7 1.7-1.7h2A4.6 4.6 0 0 0 21 10.6C21 6.4 17 3 12 3Zm-5.5 9a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Zm3-4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Zm3 4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Z',
   keyboard: 'M20 5H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2ZM11 8h2v2h-2V8Zm0 3h2v2h-2v-2ZM8 8h2v2H8V8Zm0 3h2v2H8v-2Zm-1 2H5v-2h2v2Zm0-3H5V8h2v2Zm9 6H8v-2h8v2Zm0-3h-2v-2h2v2Zm0-3h-2V8h2v2Zm3 3h-2v-2h2v2Zm0-3h-2V8h2v2Z',
   wrench: 'M22.7 19 13.6 9.9c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4Z',
+  search: 'M15.5 14h-.8l-.3-.3A6.5 6.5 0 1 0 14 15.5l.3.3v.8l5 5 1.5-1.5-5-5Zm-6 0a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9Z',
   info: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 15h-2v-6h2v6Zm0-8h-2V7h2v2Z',
   music: 'M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6Z',
   volume: 'M3 9v6h4l5 5V4L7 9H3Zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4ZM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6Z',
@@ -68,12 +69,40 @@ const PAGES = {
       {
         title: 'Atalhos globais',
         rows: [
+          { type: 'shortcut', key: 'shortcuts.openLauncher', title: 'Abrir o lançador' },
           { type: 'shortcut', key: 'shortcuts.toggleIsland', title: 'Mostrar/ocultar a ilha' },
           { type: 'shortcut', key: 'shortcuts.openSettings', title: 'Abrir as configurações' },
           { type: 'shortcut', key: 'shortcuts.toggleMic', title: 'Mutar/desmutar o microfone' },
           { type: 'shortcut', key: 'shortcuts.playPause', title: 'Tocar/pausar a música' },
         ],
         note: 'Clique no atalho e pressione a nova combinação. Esc cancela, Backspace remove.',
+      },
+    ],
+  },
+  launcher: {
+    nav: 'Lançador', icon: 'search', color: 'orange',
+    subtitle: 'Busque apps, comandos, cálculos, emojis e o histórico da área de transferência',
+    sections: [
+      {
+        title: 'Geral',
+        rows: [
+          { type: 'shortcut', key: 'shortcuts.openLauncher', title: 'Atalho para abrir', desc: 'O Raycast no Windows também usa Alt+Espaço.' },
+          { type: 'button', action: 'openLauncher', title: 'Abrir agora', label: 'Abrir' },
+        ],
+      },
+      {
+        title: 'Histórico da área de transferência',
+        rows: [
+          { type: 'toggle', key: 'launcher.clipboardHistory', title: 'Guardar o que você copia', desc: 'Textos e imagens ficam só neste PC. Senhas marcadas por gerenciadores de senha são ignoradas.' },
+          { type: 'segmented', key: 'launcher.clipboardMax', title: 'Quantos itens guardar', options: [[50, '50'], [200, '200'], [500, '500']], requires: 'launcher.clipboardHistory' },
+          { type: 'link', action: 'clearClipboard', title: 'Apagar histórico', danger: true, confirm: 'Apagar todo o histórico da área de transferência?' },
+        ],
+      },
+      {
+        title: 'Quicklinks',
+        rows: [
+          { type: 'quicklinks', key: 'launcher.quicklinks', title: 'Atalhos de busca', desc: 'Digite a palavra-chave e o texto, por exemplo "yt lofi". Use {query} no endereço.' },
+        ],
       },
     ],
   },
@@ -202,7 +231,7 @@ const PAGES = {
 };
 
 const NAV = [
-  ['general', 'appearance', 'shortcuts', 'advanced', 'about'],
+  ['general', 'appearance', 'launcher', 'shortcuts', 'advanced', 'about'],
   ['media', 'volume', 'timer', 'mic', 'camera', 'obs', 'output', 'battery'],
 ];
 
@@ -402,6 +431,8 @@ function renderRow(row) {
     case 'presets':
       el.appendChild(presetsControl(row));
       break;
+    case 'quicklinks':
+      return quicklinksControl(row);
     case 'button': {
       const b = document.createElement('button');
       b.className = 'btn';
@@ -567,6 +598,44 @@ function presetsControl(row) {
     });
     wrap.appendChild(input);
   }
+  return wrap;
+}
+
+// ---------------------------------------------------------------- quicklinks
+function quicklinksControl(row) {
+  const wrap = document.createElement('div');
+  const list = [...value(row.key)];
+  const header = rowShell(row);
+  wrap.appendChild(header);
+  list.forEach((l, i) => {
+    const r = document.createElement('div');
+    r.className = 'row ql-row';
+    r.innerHTML = `<kbd>${escapeHtml(l.keyword)}</kbd><div class="text"><div class="title">${escapeHtml(l.name)}</div><div class="desc">${escapeHtml(l.url)}</div></div>`;
+    const del = document.createElement('button');
+    del.className = 'clear-shortcut';
+    del.title = 'Remover';
+    del.textContent = '✕';
+    del.addEventListener('click', () => update(row.key, list.filter((_, j) => j !== i)));
+    r.appendChild(del);
+    wrap.appendChild(r);
+  });
+  const add = document.createElement('form');
+  add.className = 'row ql-add';
+  add.innerHTML = '<input name="keyword" placeholder="atalho" maxlength="12"><input name="name" placeholder="Nome"><input name="url" placeholder="https://site.com/busca?q={query}"><button class="btn" type="submit">Adicionar</button>';
+  add.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const f = new FormData(add);
+    const keyword = String(f.get('keyword')).trim().toLowerCase();
+    const name = String(f.get('name')).trim();
+    const url = String(f.get('url')).trim();
+    if (!keyword || /\s/.test(keyword)) return toast('A palavra-chave não pode ter espaço.', true);
+    if (!name) return toast('Dê um nome ao quicklink.', true);
+    if (!/^https?:\/\//i.test(url)) return toast('O endereço precisa começar com http:// ou https://', true);
+    if (list.some((l) => l.keyword === keyword)) return toast('Essa palavra-chave já existe.', true);
+    update(row.key, [...list, { name, keyword, url }]);
+  });
+  wrap.appendChild(add);
+  wrap.style.display = 'contents';
   return wrap;
 }
 

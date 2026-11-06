@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'">
+  <title>Tandem</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="launcher">
+    <div class="search">
+      <button id="backBtn" class="back" aria-label="Voltar"><svg viewBox="0 0 24 24"><path d="M15 5 8 12l7 7"/></svg></button>
+      <input id="query" type="text" spellcheck="false" autocomplete="off" placeholder="Busque apps e comandos…">
+      <span id="viewTag" class="view-tag"></span>
+    </div>
+    <div class="body">
+      <div class="list" id="list" role="listbox"></div>
+      <div class="preview" id="preview"></div>
+    </div>
+    <footer class="footer">
+      <span class="brand"><img src="../assets/icon.png" alt=""><span id="footerTitle">Tandem</span></span>
+      <span class="hint" id="hint"></span>
+    </footer>
+  </div>
+  <script src="emoji.js"></script>
+  <script src="calc.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

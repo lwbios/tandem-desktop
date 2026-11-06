@@ -151,6 +151,32 @@ while ($true) {
             elseif ($cmd -eq 'mute') { [IslandAudio]::ToggleMute(); $cmd = '' }
             elseif ($cmd -eq 'micmute') { [IslandAudio]::ToggleMicMute(); $cmd = '' }
             elseif ($cmd -match '^output (.+)$') { [IslandAudio]::SetDefaultOutput($Matches[1]); $cmd = '' }
+            # launcher
+            elseif ($cmd -match '^ownpid (\d+)$') { [WindowManager]::OwnPid = [uint32]$Matches[1]; $cmd = '' }
+            elseif ($cmd -eq 'paste') { [WindowManager]::Paste(); $cmd = '' }
+            elseif ($cmd -eq 'focus') { $null = [WindowManager]::Focus(); $cmd = '' }
+            elseif ($cmd -match '^window (\w+)$') { $null = [WindowManager]::Arrange($Matches[1]); $cmd = '' }
+            elseif ($cmd -eq 'apps') {
+                # Start-menu shortcuts resolved to their targets, so the launcher can show real icons.
+                $targets = @{}
+                try {
+                    $sh = New-Object -ComObject WScript.Shell
+                    $menus = @("$env:ProgramData\Microsoft\Windows\Start Menu\Programs", "$env:APPDATA\Microsoft\Windows\Start Menu\Programs")
+                    Get-ChildItem $menus -Recurse -Filter '*.lnk' -ErrorAction SilentlyContinue | ForEach-Object {
+                        try {
+                            $lnk = $sh.CreateShortcut($_.FullName)
+                            $icon = ($lnk.IconLocation -split ',')[0]
+                            $t = if ($icon -and (Test-Path $icon)) { $icon } else { $lnk.TargetPath }
+                            if ($t -and (Test-Path $t)) { $targets[$_.BaseName.ToLowerInvariant()] = $t }
+                        } catch {}
+                    }
+                } catch {}
+                $apps = @(Get-StartApps | Where-Object { $_.Name -and $_.AppID } | ForEach-Object {
+                    @{ name = $_.Name; id = $_.AppID; icon = $targets[$_.Name.ToLowerInvariant()] }
+                })
+                Emit @{ type = 'apps'; apps = $apps }
+                $cmd = ''
+            }
             $s = $mgr.GetCurrentSession()
             if ($s -and $cmd) {
                 switch ($cmd) {
@@ -196,6 +222,14 @@ while ($true) {
             Emit @{ type = 'mic'; active = $micActive; muted = $micMuted; apps = $micApps; level = $level; discord = $discord; paths = $appPaths }
             $lastMic = $micKey
         }
+    } catch {}
+
+    # Launcher: remember the window the user is in, and tell when the clipboard changes.
+    try { [WindowManager]::Track() } catch {}
+    try {
+        $clipSeq = [ClipboardWatch]::Sequence()
+        if ($null -ne $lastClipSeq -and $clipSeq -ne $lastClipSeq) { Emit @{ type = 'clipboard' } }
+        $lastClipSeq = $clipSeq
     } catch {}
 
     # Camera in use (state kept up to date by the sensor monitor callback).

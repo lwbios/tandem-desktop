@@ -336,3 +336,23 @@ kbd {
 .c-red { --c: linear-gradient(160deg,#ff7a70,#e0352b); }
 .c-teal { --c: linear-gradient(160deg,#5ad4e6,#1497b0); }
 .c-lime { --c: linear-gradient(160deg,#a4e05f,#5aa81f); }
+
+/* quicklinks editor */
+.ql-row kbd { min-width: 44px; text-align: center; }
+.ql-row .desc { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ql-add { gap: 8px; }
+.ql-add input {
+  height: 30px;
+  min-width: 0;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #18181b;
+  color: var(--text);
+  font: inherit;
+  outline: none;
+}
+.ql-add input:focus { border-color: var(--accent); }
+.ql-add input[name="keyword"] { width: 80px; }
+.ql-add input[name="name"] { width: 120px; }
+.ql-add input[name="url"] { flex: 1; }
