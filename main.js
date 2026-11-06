@@ -1,8 +1,7 @@
-const { app, BrowserWindow, screen, ipcMain, Tray, Menu, nativeImage } = require('electron');
+const { app, BrowserWindow, screen, ipcMain, Tray, Menu, nativeTheme } = require('electron');
 const path = require('path');
-const zlib = require('zlib');
 const readline = require('readline');
-const { spawn } = require('child_process');
+const { spawn, execFileSync } = require('child_process');
 
 const WIDTH = 520;
 const HEIGHT = 240;
@@ -31,6 +30,7 @@ function createWindow() {
     minimizable: false,
     maximizable: false,
     skipTaskbar: true,
+    icon: path.join(__dirname, 'assets', 'icon.ico'),
     hasShadow: false,
     focusable: false,
     alwaysOnTop: true,
@@ -65,7 +65,7 @@ function startMediaWatcher() {
 
   media.stdout.setEncoding('utf8');
   readline.createInterface({ input: media.stdout }).on('line', (line) => {
-    line = line.replace(/^﻿/, '').trim();
+    line = line.replace(/^\uFEFF/, '').trim();
     if (process.env.ISLAND_DEBUG) console.log('[media]', line.slice(0, 160));
     if (!line.startsWith('{') || !win || win.isDestroyed()) return;
     try {
@@ -101,57 +101,27 @@ function loadAppIcons(paths) {
   }
 }
 
-// Tiny PNG encoder so the tray icon needs no image file.
-function crc32(buf) {
-  let c, crc = 0xffffffff;
-  for (let n = 0; n < buf.length; n++) {
-    c = (crc ^ buf[n]) & 0xff;
-    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
-    crc = (crc >>> 8) ^ c;
+// Tray icon follows the taskbar: white logo on a dark taskbar, dark logo on a light one.
+// Windows keeps the taskbar theme apart from the app theme (SystemUsesLightTheme).
+function taskbarIsDark() {
+  try {
+    const out = execFileSync('reg', [
+      'query', 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize',
+      '/v', 'SystemUsesLightTheme',
+    ], { encoding: 'utf8', windowsHide: true });
+    return /0x0\b/.test(out);
+  } catch {
+    return true; // value missing on older builds: taskbar is dark
   }
-  return (crc ^ 0xffffffff) >>> 0;
 }
 
-function pngChunk(type, data) {
-  const len = Buffer.alloc(4);
-  len.writeUInt32BE(data.length);
-  const body = Buffer.concat([Buffer.from(type), data]);
-  const crc = Buffer.alloc(4);
-  crc.writeUInt32BE(crc32(body));
-  return Buffer.concat([len, body, crc]);
-}
-
-function makeTrayIcon() {
-  const size = 32;
-  const raw = Buffer.alloc((size * 4 + 1) * size);
-  // white pill, 28x12 centred, fully rounded ends
-  const cx1 = 8, cx2 = 24, cy = 16, r = 6;
-  for (let y = 0; y < size; y++) {
-    raw[y * (size * 4 + 1)] = 0;
-    for (let x = 0; x < size; x++) {
-      const nx = Math.min(Math.max(x + 0.5, cx1), cx2);
-      const d = Math.hypot(x + 0.5 - nx, y + 0.5 - cy);
-      const a = Math.max(0, Math.min(1, r - d + 0.5));
-      const i = y * (size * 4 + 1) + 1 + x * 4;
-      raw[i] = raw[i + 1] = raw[i + 2] = 255;
-      raw[i + 3] = Math.round(a * 255);
-    }
-  }
-  const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(size, 0);
-  ihdr.writeUInt32BE(size, 4);
-  ihdr[8] = 8; ihdr[9] = 6; ihdr[10] = 0; ihdr[11] = 0; ihdr[12] = 0;
-  const png = Buffer.concat([
-    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
-    pngChunk('IHDR', ihdr),
-    pngChunk('IDAT', zlib.deflateSync(raw)),
-    pngChunk('IEND', Buffer.alloc(0)),
-  ]);
-  return nativeImage.createFromBuffer(png);
+function trayIconPath() {
+  return path.join(__dirname, 'assets', taskbarIsDark() ? 'tray-dark.ico' : 'tray-light.ico');
 }
 
 function createTray() {
-  tray = new Tray(makeTrayIcon());
+  tray = new Tray(trayIconPath());
+  nativeTheme.on('updated', () => tray && tray.setImage(trayIconPath()));
   tray.setToolTip('Tandem');
   tray.setContextMenu(Menu.buildFromTemplate([
     {

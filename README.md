@@ -37,6 +37,14 @@ Um ícone em forma de pílula aparece na bandeja do sistema com as opções **In
 | `audio.cs` | Helpers de Core Audio carregados pelo PowerShell: volume, mudo e nível do microfone, e sessões de captura ativas. |
 | `preload.js` | Ponte segura (`contextBridge`) entre o processo principal e a página. |
 | `index.html`, `style.css`, `renderer.js` | A ilha em si: estados, animações, timer, relógio e bateria. |
+| `assets/` | Logo original e ícones gerados: `icon.ico`/`icon.png` (app) e `tray-dark.ico`/`tray-light.ico` (bandeja, trocados conforme o tema da barra de tarefas). |
+| `scripts/make-icons.ps1` | Gera todos os ícones a partir de `assets/logo.png` (1024×1024, logo branca em fundo transparente). |
+
+Para regerar os ícones depois de trocar a logo:
+
+```bash
+powershell -ExecutionPolicy Bypass -File scripts/make-icons.ps1
+```
 
 ## Limitações conhecidas
 
